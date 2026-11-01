@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>ব্রেক লেস পরিবহন — Brakeless Poribohon | 3D Dhaka Driving Game</title>
+<meta name="description" content="ঢাকার রাস্তায় ব্রেক-ছাড়া মিশুকের 3D গেম। জাতীয় ক্ষতি বাড়ান, বাস-ট্রাক থেকে বাঁচুন, জনতা আর পুলিশের হাত থেকে পালান। একটি কাল্পনিক ব্যঙ্গাত্মক গেম — নির্মাতা Kamal Ahmed।">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%23e63946'/><text x='50%' y='62%' dominant-baseline='middle' text-anchor='middle' font-size='52'>🛺</text></svg>">
+<style>
+ *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+ html,body{width:100%;height:100%;overflow:hidden;background:#87b5d6;font-family:'Hind Siliguri','Segoe UI',Tahoma,sans-serif}
+ #game{position:fixed;inset:0} canvas{display:block}
+ button{font-family:inherit}
+ .btn{background:#e63946;color:#fff;border:none;border-bottom:5px solid #9d1c28;font-size:clamp(18px,4.5vw,25px);font-weight:800;padding:13px 38px;border-radius:14px;cursor:pointer}
+ .btn:active{transform:translateY(3px);border-bottom-width:2px}
+ .btn.yellow{background:#f4b400;border-bottom-color:#a87800;color:#221a00}
+ .btn.dark{background:#22252a;border-bottom-color:#000;color:#fff}
+ .btn.small{font-size:15px;padding:9px 18px;border-bottom-width:3px}
+ /* ---------- Menu ---------- */
+ #menu{position:fixed;inset:0;z-index:20;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;overflow-y:auto;padding:26px 14px 30px;background:linear-gradient(180deg,rgba(8,25,45,.72),rgba(8,25,45,.35) 55%,rgba(8,25,45,.65))}
+ .title{font-size:clamp(40px,10vw,84px);font-weight:900;color:#ffd83d;text-shadow:3px 3px 0 #c0392b,7px 7px 0 rgba(0,0,0,.35);line-height:1.12;text-align:center}
+ .subtitle{color:#fff;font-size:clamp(15px,3.6vw,22px);margin-top:10px;text-align:center;font-weight:600}
+ .tagline{color:#ffe9a8;font-size:clamp(13px,3vw,16.5px);margin:6px 0 20px;text-align:center;max-width:640px}
+ #locSel{font-size:16px;font-weight:700;padding:11px 16px;border-radius:999px;border:2px solid #ffd83d;background:#14181d;color:#fff;margin-bottom:14px;max-width:92vw}
+ .menuRow{display:flex;gap:9px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+ .chip{background:rgba(0,0,0,.55);color:#fff;border:1.5px solid rgba(255,255,255,.5);padding:9px 16px;border-radius:999px;font-size:14.5px;font-weight:700;cursor:pointer}
+ .chip:hover{background:rgba(255,216,61,.85);color:#111}
+ #howto{display:none;max-width:680px;margin-top:16px;background:rgba(0,0,0,.55);border-radius:14px;padding:14px 16px;color:#eaf4ff;font-size:14.5px;line-height:1.75;text-align:left}
+ #howto b{color:#ffd83d}
+ .credit{color:#dfeeff;margin-top:18px;font-size:14px}
+ .credit a{color:#ffd83d;font-weight:700;text-decoration:none}
+ /* ---------- HUD ---------- */
+ #hud{position:fixed;inset:0;pointer-events:none;z-index:10;display:none}
+ .hudTL{position:absolute;top:10px;left:10px;background:rgba(0,0,0,.55);border-radius:12px;padding:8px 14px;color:#fff}
+ .hudTL .lab{font-size:13px;font-weight:700;letter-spacing:.4px}
+ #lossTxt{color:#ffd83d;font-size:clamp(22px,5.5vw,32px);font-weight:900;line-height:1.05}
+ #comboTxt{color:#ff9f43;font-size:14px;font-weight:800}
+ .hudTR{position:absolute;top:10px;right:10px;display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+ .chargeBox{background:rgba(0,0,0,.55);border-radius:12px;padding:8px 12px;color:#fff;font-weight:800;font-size:15px;min-width:150px}
+ #chargeWrap{height:11px;background:#333;border-radius:6px;overflow:hidden;margin-top:4px}
+ #chargeBar{height:100%;width:100%;background:#2ecc71}
+ #miniWrap{position:relative;width:118px;height:118px}
+ #minimap{width:118px;height:118px;border-radius:50%;border:3px solid rgba(255,255,255,.75);background:rgba(10,25,40,.72)}
+ #navPill{background:rgba(0,0,0,.6);color:#ffe066;border-radius:999px;padding:5px 12px;font-size:13.5px;font-weight:800}
+ .roundBtns{display:flex;gap:8px;pointer-events:auto}
+ .rbtn{width:44px;height:44px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(0,0,0,.55);color:#fff;font-size:19px;cursor:pointer}
+ #areaBanner{position:absolute;top:19%;left:50%;transform:translateX(-50%);background:rgba(0,0,0,.65);color:#ffd83d;font-size:clamp(19px,5vw,30px);font-weight:900;padding:9px 26px;border-radius:12px;opacity:0;transition:opacity .4s;text-align:center}
+ #msgPop{position:absolute;top:30%;left:50%;transform:translateX(-50%);font-size:clamp(19px,5.5vw,33px);font-weight:900;color:#fff;text-shadow:2px 2px 0 #c0392b;opacity:0;transition:opacity .25s;white-space:nowrap;text-align:center}
+ #grabInfo{position:absolute;top:64px;left:10px;background:rgba(120,0,0,.6);color:#fff;border-radius:10px;padding:6px 12px;font-weight:800;font-size:14px;display:none}
+ #countDown{position:absolute;top:38%;left:50%;transform:translate(-50%,-50%);font-size:90px;font-weight:900;color:#ffd83d;text-shadow:4px 4px 0 rgba(0,0,0,.5);display:none}
+ /* ticker */
+ #ticker{position:fixed;left:0;right:0;bottom:0;height:30px;background:#b3001b;color:#fff;z-index:11;display:none;overflow:hidden;align-items:center}
+ #ticker .tlab{background:#111;color:#ffd83d;font-weight:900;font-size:13px;padding:0 10px;height:100%;display:flex;align-items:center;flex:none;z-index:2}
+ #tickerTrack{white-space:nowrap;font-size:14px;font-weight:600;animation:tick 40s linear infinite;padding-left:12px}
+ @keyframes tick{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+ /* ---------- Touch ---------- */
+ #touch{position:fixed;bottom:40px;left:0;right:0;display:none;justify-content:space-between;padding:0 12px;z-index:15;pointer-events:none}
+ .tcol{display:flex;flex-direction:column;gap:8px;align-items:center}
+ .trow{display:flex;gap:8px}
+ .tbtn{pointer-events:auto;width:58px;height:58px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(0,0,0,.45);color:#fff;font-size:21px;font-weight:900}
+ .tbtn.big{width:74px;height:74px;background:rgba(46,204,113,.55)}
+ .tbtn.brk{background:rgba(230,57,70,.5)} .tbtn.bst{background:rgba(244,180,0,.55)}
+ @media (pointer:coarse){#touch.on{display:flex}}
+ /* ---------- Modals ---------- */
+ .modal{position:fixed;inset:0;z-index:30;display:none;align-items:flex-start;justify-content:center;background:rgba(0,0,0,.62);overflow-y:auto;padding:22px 10px}
+ .modal.open{display:flex}
+ .sheet{background:#fdfdf8;color:#182026;max-width:560px;width:100%;border-radius:16px;padding:24px 24px 20px;box-shadow:0 12px 40px rgba(0,0,0,.5);line-height:1.65;font-size:15px}
+ .sheet h2{font-size:23px;margin-bottom:8px}
+ .sheet h3{margin:14px 0 4px;font-size:16.5px}
+ .sheet p{margin:5px 0}
+ .sheet .x{float:right;background:#e63946;color:#fff;border:none;width:34px;height:34px;border-radius:50%;font-size:17px;cursor:pointer}
+ .aboutPhoto{width:132px;height:132px;border-radius:50%;border:5px solid #ffd100;object-fit:cover;display:block;margin:6px auto}
+ .cbtns{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:12px}
+ .cbtns a{background:#14181d;color:#fff;text-decoration:none;font-weight:700;padding:9px 16px;border-radius:999px;font-size:14px}
+ .mwTabs{display:flex;gap:8px;margin:10px 0}
+ .mwTabs button{flex:1;padding:8px;border-radius:9px;border:2px solid #14181d;background:#fff;font-weight:800;cursor:pointer}
+ .mwTabs button.act{background:#14181d;color:#ffd83d}
+ #mwList{font-size:14.5px} #mwList div{display:flex;justify-content:space-between;border-bottom:1px dashed #999;padding:4px 2px}
+ /* ---------- Newspaper game over ---------- */
+ #overScreen{display:none}
+ .paper{background:#f5ecd7;color:#1a1a1a;max-width:540px;width:100%;border:3px solid #1a1a1a;padding:22px 24px;box-shadow:8px 8px 0 rgba(0,0,0,.4);text-align:left;line-height:1.6}
+ .paper .mast{text-align:center;border-bottom:4px double #1a1a1a;padding-bottom:8px}
+ .paper .pname{font-size:clamp(25px,6vw,37px);font-weight:900}
+ .paper .pmeta{font-size:12px;display:flex;justify-content:space-between;border-top:1px solid #1a1a1a;margin-top:6px;padding-top:4px}
+ .paper h2{font-size:clamp(19px,5vw,25px);margin:13px 0 7px;line-height:1.35}
+ .paper p{font-size:14.5px}
+ #crashPhoto{width:100%;border:2px solid #1a1a1a;margin:8px 0;display:none}
+ .paper .bigloss{font-size:clamp(24px,6.5vw,34px);font-weight:900;color:#b91c1c;text-align:center;margin:10px 0}
+ .paper table{width:100%;border-collapse:collapse;font-size:14px;margin:6px 0}
+ .paper td{border-bottom:1px dashed #888;padding:4px 2px}.paper td:last-child{text-align:right;font-weight:700}
+ .paper .center{text-align:center;margin-top:14px}
+ #nameRow{display:flex;gap:8px;margin-top:12px}
+ #nameInput{flex:1;padding:10px;border:2px solid #1a1a1a;border-radius:9px;font-size:15px;background:#fffdf4}
+ .kbdNote{color:#dfeeff;font-size:13px;margin-top:10px;text-align:center}
+</style>
+</head>
+<body>
+<div id="game"></div>
+
+<!-- ======= HUD ======= -->
+<div id="hud">
+  <div class="hudTL"><div class="lab">জাতীয় ক্ষতি</div><div id="lossTxt">৳0</div><div id="comboTxt"></div></div>
+  <div id="grabInfo">✊ জনতা ধরে ফেলেছে: <span id="grabTxt">0</span>/3</div>
+  <div class="hudTR">
+    <div class="chargeBox">🔋 চার্জ <span id="chargeTxt">100%</span><div id="chargeWrap"><div id="chargeBar"></div></div></div>
+    <div id="miniWrap"><canvas id="minimap" width="236" height="236"></canvas></div>
+    <div id="navPill">⚡ চার্জিং পয়েন্ট: —</div>
+    <div class="roundBtns"><button class="rbtn" id="pauseBtn" title="Pause (P)">⏸</button><button class="rbtn" id="soundBtn" title="Sound (M)">🔊</button></div>
+  </div>
+  <div id="areaBanner"></div><div id="msgPop"></div><div id="countDown"></div>
+</div>
+<div id="ticker"><div class="tlab">সর্বশেষ</div><div id="tickerTrack"></div></div>
+
+<!-- ======= Touch ======= -->
+<div id="touch">
+  <div class="tcol"><div class="trow"><button class="tbtn" id="tHorn">📯</button><button class="tbtn" id="tBomb">💥</button></div>
+  <div class="trow"><button class="tbtn" id="tLeft">◀</button><button class="tbtn" id="tRight">▶</button></div></div>
+  <div class="tcol"><div class="trow"><button class="tbtn brk" id="tBrake">▼</button><button class="tbtn bst" id="tBoost">🚀</button></div>
+  <div class="trow"><button class="tbtn big" id="tGas">▲</button></div></div>
+</div>
+
+<!-- ======= MENU ======= -->
+<div id="menu">
+  <div class="title">ব্রেক লেস পরিবহন</div>
+  <div class="subtitle">BRAKELESS PORIBOHON — ঢাকার রাস্তায় ব্রেক-ছাড়া মিশুক!</div>
+  <div class="tagline">রাস্তা কারো বাপের সম্পত্তি না, ঠিক আছে — কিন্তু ব্রেকটা তো থাকার কথা ছিল! চার্জ ফুরোনোর আগে যত পারো ক্ষতি করো, শুধু বাস-ট্রাক, জনতা আর পুলিশ থেকে বেঁচে থেকো।</div>
+  <select id="locSel">
+    <option value="Farmgate">📍 ফার্মগেট থেকে শুরু</option>
+    <option value="Gulistan">📍 গুলিস্তান — হকারের ভিড়!</option>
+    <option value="Shahbag">📍 শাহবাগ</option>
+    <option value="Mirpur 10">📍 মিরপুর ১০</option>
+    <option value="Uttara">📍 উত্তরা</option>
+    <option value="Jatrabari">📍 যাত্রাবাড়ী</option>
+    <option value="Random" selected>🎲 ড্রাইভারের খেয়াল — র‍্যান্ডম</option>
+  </select>
+  <button class="btn yellow" id="playBtn">🛺 রাস্তায় নামো</button>
+  <div class="menuRow">
+    <button class="chip" id="howBtn">❓ কিভাবে খেলবে</button>
+    <button class="chip" id="aboutBtn">ℹ️ আমাদের সম্পর্কে</button>
+    <button class="chip" id="mwBtn">🏆 মোস্ট ওয়ান্টেড</button>
+    <button class="chip" id="guideBtn">📖 গাইড</button>
+    <button class="chip" id="discBtn">⚖️ ডিসক্লেইমার</button>
+  </div>
+  <div id="howto">
+    <p>💥 <b>ক্র্যাশ করো</b> — গাড়ি, সিএনজি, রিকশা, দোকান ভাঙলেই <b>জাতীয় ক্ষতি</b> বাড়বে। পরপর ক্র্যাশে <b>কম্বো</b> গুণ বাড়ে!</p>
+    <p>🚌 <b>বাস/ট্রাক থেকে সাবধান</b> — নিচে লাল আলোর বলয়ওয়ালা বাস, ট্রাক আর গোলাপি বাসে ছোঁয়া লাগলেই দৌড় শেষ। পাশ দিয়ে ঝুঁকি নিয়ে গেলে <b>নিয়ার-মিস বোনাস</b>!</p>
+    <p>👥 <b>জনতার ধাওয়া</b> — ক্র্যাশের পর জনতা পেছনে ছুটবে, জড়িয়ে ধরবে। ৩ জন ধরলে বা ধরা অবস্থায় থামলেই খেলা শেষ। <b>বুস্ট</b> আর ঝাঁকুনি দিয়ে ঝেড়ে ফেলো।</p>
+    <p>🔋 <b>চার্জ</b> — খুঁটির পাশে <b>হলুদ দাগে</b> থামলে চার্জ হবে। চার্জ কমলে মিশুক অর্ধেক গতিতে চলবে। মিনিম্যাপে তীর দেখাবে কোন দিকে চার্জিং পয়েন্ট।</p>
+    <p>🚓 <b>পুলিশ ও মামলা</b> — পুলিশের গাড়িতে ধাক্কা দিলে সাইরেন-ধাওয়া শুরু। তখন <b>গোলাপি দাগে</b> আস্তে ঢুকে চা-খরচ দিলে মামলা শেষ — তবে প্রতি বার খরচের হার বাড়বে!</p>
+    <p>🕳️ <b>ম্যানহোল</b> — লাল কাপড়ের কাঠি দেখলেই সাবধান, খোলা ম্যানহোলে পড়লে শেষ। বিক্ষোভের ঠেলাগাড়িতে উড়াল দিলে বোনাস!</p>
+    <p>⌨️ <b>কন্ট্রোল:</b> W/▲ গতি • S/▼ ব্রেক • A/D মোড় • Space/Shift বুস্ট • H হর্ন (ছোট গাড়ি সরে যায়) • B সাউন্ড বোমা • M সাউন্ড • P/Esc পজ</p>
+  </div>
+  <div class="credit">Made by <b>Kamal Ahmed</b> • <a href="https://www.facebook.com/kamalmostakin" target="_blank" rel="noopener">Facebook</a> • <a href="https://www.youtube.com/@jhoreporapatargolpo" target="_blank" rel="noopener">YouTube</a></div>
+  <div class="kbdNote">Enter চাপলেও খেলা শুরু হয়</div>
+</div>
+
+<!-- ======= ABOUT ======= -->
+<div class="modal" id="aboutModal"><div class="sheet">
+  <button class="x" data-close="aboutModal">✕</button>
+  <h2>আমাদের সম্পর্কে</h2>
+  <img class="aboutPhoto" src="images/kamal_photo.png" alt="Kamal Ahmed">
+  <p style="text-align:center"><b style="font-size:19px">Kamal Ahmed</b><br>ঢাকার একজন ক্রিয়েটিভ গেম ডেভেলপার। বাংলাদেশের সংস্কৃতি, শহুরে যানজট আর প্রতিদিনের হাস্যরস নিয়ে মজার গেম বানানোই তার শখ ও কাজ।</p>
+  <h3>🎮 ব্রেক লেস পরিবহন</h3>
+  <p>ঢাকার চেনা রাস্তা, চেনা যানজট আর চেনা বিশৃঙ্খলা — সব মিলিয়ে একটা হালকা ব্যঙ্গের 3D ব্রাউজার গেম। কোনো ডাউনলোড বা অ্যাকাউন্ট ছাড়াই ফোন ও কম্পিউটারে খেলা যায়।</p>
+  <h3>📩 যোগাযোগ</h3>
+  <p>ব্র্যান্ড কোলাবরেশন, গেমে বিজ্ঞাপন/প্লেসমেন্ট কিংবা নতুন গেমের আইডিয়া নিয়ে কথা বলতে চাইলে যোগাযোগ করুন:<br>ইমেইল: <b>kamalahmed1984@gmail.com</b></p>
+  <div class="cbtns">
+    <a href="mailto:kamalahmed1984@gmail.com">✉️ Email Me</a>
+    <a href="https://www.facebook.com/kamalmostakin" target="_blank" rel="noopener">💬 Facebook DM</a>
+    <a href="https://github.com/kamal-core/" target="_blank" rel="noopener">💻 Portfolio</a>
+  </div>
+</div></div>
+
+<!-- ======= GUIDE ======= -->
+<div class="modal" id="guideModal"><div class="sheet">
+  <button class="x" data-close="guideModal">✕</button>
+  <h2>📖 গাইড ও FAQ</h2>
+  <h3>খেলার নিয়ম (সংক্ষেপে)</h3>
+  <p>ক্র্যাশে জাতীয় ক্ষতি বাড়ে, পরপর ক্র্যাশে কম্বো গুণ বাড়ে। একই গাড়িতে দ্বিতীয়বার ধাক্কায় পয়েন্ট নেই। আয়না ছুঁয়ে গেলে ছোট বোনাস, বাস/ট্রাকের পাশ দিয়ে কাছ দিয়ে গেলে নিয়ার-মিস বোনাস, উল্টো দিকের রাস্তায় চালালে সব পয়েন্ট ১.৫ গুণ।</p>
+  <h3>শেষ হয় কখন?</h3>
+  <p>বাস/ট্রাক/গোলাপি বাসে ছোঁয়া, খোলা ম্যানহোলে পড়া, জনতার হাতে ধরা পড়া, পুলিশের মামলায় আটক, অথবা চার্জ শেষ হয়ে থেমে যাওয়া।</p>
+  <h3>কন্ট্রোল — ফোনে</h3>
+  <p>বাম দিকে মোড়ের বোতাম, তার উপরে হর্ন ও সাউন্ড বোমা; ডান দিকে বড় গতি বোতাম, পাশে ব্রেক ও বুস্ট। আঙুল না তুলেই পাশের বোতামে স্লাইড করা যায়।</p>
+  <h3>FAQ</h3>
+  <p><b>গেমটা কি ফ্রি?</b> হ্যাঁ, সম্পূর্ণ ফ্রি। ডাউনলোড, APK বা অ্যাকাউন্ট লাগে না।<br>
+  <b>কোথায় চলবে?</b> Android, iPhone ও কম্পিউটারের ব্রাউজারে। কম দামি ফোনে গ্রাফিক্স নিজে থেকে হালকা হয়ে যায়।<br>
+  <b>ইনস্টল করা যায়?</b> ব্রাউজারের মেনু থেকে "Add to Home screen" দিলেই অ্যাপের মতো থাকবে।<br>
+  <b>এটা কি সত্যিকারের ড্রাইভিং শেখায়?</b> মোটেও না — এটা ব্যঙ্গাত্মক কাল্পনিক গেম। বিস্তারিত ডিসক্লেইমারে।</p>
+</div></div>
+
+<!-- ======= DISCLAIMER ======= -->
+<div class="modal" id="discModal"><div class="sheet">
+  <button class="x" data-close="discModal">✕</button>
+  <h2>⚖️ ডিসক্লেইমার</h2>
+  <p><b>ব্রেক লেস পরিবহন</b> একটি কাল্পনিক, ব্যঙ্গাত্মক ও বিনোদনমূলক গেম।</p>
+  <h3>১. কাল্পনিক গেম</h3>
+  <p>গেমের সব চরিত্র, ঘটনা ও সংলাপ কাল্পনিক। বাস্তব কোনো ব্যক্তি, প্রতিষ্ঠান বা ঘটনার সঙ্গে মিল কাকতালীয়।</p>
+  <h3>২. রাজনৈতিক অবস্থান নেই</h3>
+  <p>এই গেম কোনো রাজনৈতিক দল, নেতা বা মতাদর্শের পক্ষে বা বিপক্ষে নয়। ব্যঙ্গের বিষয় শুধু সড়কের বিশৃঙ্খলা ও দৈনন্দিন আচরণ।</p>
+  <h3>৩. বাস্তবে অনুকরণ করবেন না</h3>
+  <p>গেমে দেখানো বিপজ্জনক ড্রাইভিং, ইচ্ছাকৃত সংঘর্ষ, উল্টো পথে চালানো বা জরিমানা এড়ানোর চেষ্টা বাস্তবে কখনোই করবেন না। সড়কে আইন মানুন, নিজের ও অন্যের নিরাপত্তাকে সবার আগে রাখুন।</p>
+  <h3>৪. সহিংসতা সমর্থন নয়</h3>
+  <p>গেমে জনতার ধাওয়ার দৃশ্য ব্যঙ্গের অংশ মাত্র — গণপিটুনি বা আইন হাতে তুলে নেওয়ার সমর্থন নয়। কোনো অপরাধের বিচার আইনের মাধ্যমেই হওয়া উচিত।</p>
+  <h3>৫. চালকদের প্রতি সম্মান</h3>
+  <p>এই গেম কোনো পেশার মানুষকে হেয় করে না। অটোরিকশা চালকসহ সব সড়ক ব্যবহারকারীর জন্য নিরাপদ সড়ক, দায়িত্বশীল চালনা ও উন্নত যানবাহনই আমাদের কামনা।</p>
+  <h3>৬. স্বাস্থ্য সতর্কতা</h3>
+  <p>গেমে ঝলকানি আলো (যেমন পুলিশের বাতি), হঠাৎ জোরে শব্দ ও স্ক্রিন কাঁপানো থাকতে পারে। আলো-সংবেদনশীলতা বা মৃগী থাকলে সতর্ক থাকুন; অস্বস্তি হলে খেলা বন্ধ করে বিরতি নিন।</p>
+  <h3>৭. যোগাযোগ</h3>
+  <p>নির্মাতা: <b>Kamal Ahmed</b> • ইমেইল: kamalahmed1984@gmail.com • Facebook: facebook.com/kamalmostakin</p>
+  <p style="margin-top:10px;color:#555"><i>English summary: Brakeless Poribohon is a fictional satirical game. All characters and events are imaginary. It has no political affiliation. Never imitate in-game driving in real life — follow traffic laws and keep everyone safe. Crowd scenes are satire, not an endorsement of violence. The game is not a driving simulation. It may contain flashing lights, loud sounds and screen shake — take breaks and play with care.</i></p>
+  <p style="margin-top:8px;color:#555">© 2026 Kamal Ahmed. All rights reserved.</p>
+</div></div>
+
+<!-- ======= MOST WANTED ======= -->
+<div class="modal" id="mwModal"><div class="sheet">
+  <button class="x" data-close="mwModal">✕</button>
+  <h2>🏆 মোস্ট ওয়ান্টেড</h2>
+  <p>সবচেয়ে বেশি জাতীয় ক্ষতি করা ড্রাইভারদের তালিকা। এদের ধরিয়ে দিতে পারলে পুরস্কার — এক কাপ চা! ☕</p>
+  <div class="mwTabs"><button id="mwWeek" class="act">এই সপ্তাহে</button><button id="mwAll">সর্বকালের</button></div>
+  <div id="mwList"></div>
+  <p style="color:#666;font-size:13px;margin-top:8px">* তালিকাটা এই ডিভাইসে খেলা রেকর্ড থেকে তৈরি। নতুন সপ্তাহ শুরু হয় প্রতি শনিবার রাত ১২টা থেকে।</p>
+</div></div>
+
+<!-- ======= PAUSE ======= -->
+<div class="modal" id="pauseModal"><div class="sheet" style="max-width:380px;text-align:center">
+  <h2>⏸ খেলা থেমেছে</h2>
+  <div class="cbtns" style="flex-direction:column;align-items:stretch">
+    <button class="btn yellow" id="resumeBtn">▶ আবার চালাও</button>
+    <button class="btn dark" id="restartBtn">🔄 নতুন করে শুরু</button>
+    <button class="btn dark" id="homeBtn">🏠 হোমে যাও</button>
+    <button class="btn dark" id="soundBtn2">🔊 সাউন্ড: চালু</button>
+  </div>
+</div></div>
+
+<!-- ======= GAME OVER (NEWSPAPER) ======= -->
+<div class="modal" id="overScreen"><div class="paper">
+  <div class="mast"><div class="pname">দৈনিক জ্যাম-বার্তা</div>
+  <div class="pmeta"><span>ঢাকা</span><span id="paperDate"></span><span>মূল্য: ১০ টাকা</span></div></div>
+  <h2 id="overHeadline">ব্রেক-ছাড়া মিশুকের দৌড় থামল!</h2>
+  <p id="overReason"></p>
+  <img id="crashPhoto" alt="ঘটনাস্থলের ছবি">
+  <div class="bigloss">জাতীয় ক্ষতি: ৳<span id="finalLoss">0</span></div>
+  <table id="breakTable"></table>
+  <p>মোট দূরত্ব: <b><span id="finalDist">0</span> মিটার</b> • এলাকা: <b id="finalArea">—</b><br>এই টাকায় কেনা যেত প্রায় <b><span id="couldBuy">0</span> হাজার</b> কাপ চা! ☕</p>
+  <p style="font-style:italic;margin-top:6px">ঘটনা খতিয়ে দেখতে একটি তদন্ত কমিটি গঠনের সিদ্ধান্ত হয়েছে বলে জানা গেছে।</p>
+  <div id="nameRow"><input id="nameInput" maxlength="24" placeholder="মোস্ট ওয়ান্টেডে নাম তুলতে নাম লিখুন"><button class="btn small dark" id="saveScoreBtn">নাম তোলো</button></div>
+  <div class="center">
+    <button class="btn" id="againBtn">🔄 আবার চালাও (R)</button>
+    <button class="btn dark" id="shareBtn">📤 শেয়ার</button>
+    <button class="btn dark" id="menuBtn2">🏠 মেনু (Esc)</button>
+  </div>
+</div></div>
+
+<script type="importmap">{"imports":{"three":"./lib/three.module.js"}}</script>
+<script type="module">
+import * as THREE from 'three';
+const $=id=>document.getElementById(id);
+const fmt=n=>Math.round(n).toLocaleString('en-IN');
+const clamp=THREE.MathUtils.clamp;
+
+/* ================= AUDIO ================= */
+let AC=null, muted=false;
+function tone(f,d,type='square',v=0.1,when=0){ if(muted) return; try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); const t=AC.currentTime+when; const o=AC.createOscillator(),g=AC.createGain(); o.type=type;o.frequency.value=f; g.gain.setValueAtTime(v,t); g.gain.exponentialRampToValueAtTime(0.001,t+d); o.connect(g);g.connect(AC.destination); o.start(t);o.stop(t+d);}catch(e){} }
+const sndHorn=()=>{tone(330,.16);tone(415,.22,'square',.09,.02)};
+const sndBomb=()=>{tone(70,.4,'sawtooth',.22);tone(48,.5,'triangle',.2,.02)};
+const sndCrash=big=>{tone(big?85:130,big?.45:.28,'sawtooth',.2);tone(55,.3,'triangle',.16,.02)};
+const sndDing=()=>{tone(880,.12,'sine',.1);tone(1320,.18,'sine',.09,.09)};
+const sndSiren=()=>{tone(660,.14,'square',.05);tone(520,.14,'square',.05,.15)};
+
+/* ================= SCENE ================= */
+const scene=new THREE.Scene();
+scene.background=new THREE.Color(0x87b5d6);
+scene.fog=new THREE.Fog(0x87b5d6,70,200);
+const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.1,500);
+const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
+renderer.setSize(innerWidth,innerHeight);
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+$('game').appendChild(renderer.domElement);
+const amb=new THREE.AmbientLight(0xffffff,.8); scene.add(amb);
+const sun=new THREE.DirectionalLight(0xfff2cc,1.35); sun.position.set(25,45,12); scene.add(sun);
+const mat=c=>new THREE.MeshLambertMaterial({color:c});
+const matE=(c,e)=>new THREE.MeshLambertMaterial({color:c,emissive:e});
+function box(w,h,d,c,x=0,y=0,z=0,p,e){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), e?matE(c,e):mat(c)); m.position.set(x,y,z); if(p)p.add(m); return m; }
+function wheel(r,x,y,z,p){ const w=new THREE.Mesh(new THREE.CylinderGeometry(r,r,.2,14),mat(0x16181a)); w.rotation.z=Math.PI/2; w.position.set(x,y,z); p.add(w); const hub=new THREE.Mesh(new THREE.CylinderGeometry(r*.45,r*.45,.22,10),mat(0xbdc3c7)); hub.rotation.z=Math.PI/2; hub.position.set(x,y,z); p.add(hub); return w; }
+function person(p,shirt,pants=0x2d3436,skin=0xe8b88a){ box(.46,.62,.26,shirt,0,1.02,0,p); box(.4,.4,.4,skin,0,1.55,0,p); box(.15,.58,.15,pants,-.13,.3,0,p); box(.15,.58,.15,pants,.13,.3,0,p); box(.13,.5,.13,shirt,-.32,1.05,0,p); box(.13,.5,.13,shirt,.32,1.05,0,p); }
+
+/* ================= STATIC ROAD ================= */
+const ROAD_LEN=460, ROAD_C=-130;
+box(500,.05,ROAD_LEN,0x69a85f,0,-.09,ROAD_C,scene);                 // ground
+box(12,.12,ROAD_LEN,0x3a3f44,-7,.02,ROAD_C,scene);                  // my carriageway
+box(12,.12,ROAD_LEN,0x3a3f44, 7,.02,ROAD_C,scene);                  // opposite carriageway
+box(2,.14,ROAD_LEN,0x565d63,0,.03,ROAD_C,scene);                    // median base
+box(3.6,.1,ROAD_LEN,0x8d6e63,-14.9,.0,ROAD_C,scene);                // left sidewalk
+box(3.6,.1,ROAD_LEN,0x8d6e63, 14.9,.0,ROAD_C,scene);                // right sidewalk
+for(const sx of [-13.1,13.1,-1.05,1.05]) box(.35,.22,ROAD_LEN,0xf4b400,sx,.08,ROAD_C,scene); // yellow kerbs
+box(6.5,.5,ROAD_LEN,0x707880,0,11.4,ROAD_C,scene);                  // metro deck overhead
+for(const wx of [-16.9,16.9]) box(.18,7.6,.18,0x4a4a4a,wx,3.8,ROAD_C,scene); // wire poles (long visual anchors at ends only)
+/* lane dashes (recycled) */
+const dashes=[];
+for(const lx of [-10,-7,-4,4,7,10]) for(let i=0;i<34;i++) dashes.push(box(.28,.03,2.4,0xf8f8f8,lx,.1,-i*13+8,scene));
+/* median hedges + metro pillars (recycled) */
+const hedges=[];
+for(let i=0;i<26;i++){ if(i%6===5) continue; const g=new THREE.Group(); box(1.1,.55,10.5,0x2e7d32,0,.45,0,g); box(1.14,.14,10.5,0xf4b400,0,.16,0,g); g.position.z=-i*12+8; scene.add(g); hedges.push(g); }
+const pillars=[];
+for(let i=0;i<10;i++){ const g=new THREE.Group(); box(1.3,11,1.3,0x9aa0a3,0,5.5,0,g); box(3.4,.7,2,0x878d91,0,10.9,0,g); g.position.z=-i*30+6; scene.add(g); pillars.push(g); }
+
+/* ================= SCENERY ================= */
+const shopCols=[0xe67e22,0x16a085,0x8e44ad,0xd35400,0x2980b9,0xc0392b,0x27ae60,0xf39c12];
+const winMat=matE(0x8a6d1f,0xffca3a);
+const scenery=[];
+function makeScenery(z){
+  const g=new THREE.Group();
+  for(const side of [-1,1]){
+    const t=Math.random(), bx=side*(19.5+Math.random()*3.5);
+    if(t<.5){ const h=6+Math.random()*12; box(7.5,h,7,shopCols[(Math.random()*shopCols.length)|0],bx,h/2,0,g);
+      for(let wxi=0;wxi<5;wxi++){ const win=new THREE.Mesh(new THREE.BoxGeometry(1,.9,.1),winMat); win.position.set(bx-side*3.78,1.6+Math.random()*(h-2.4),-2.4+Math.random()*4.8); win.rotation.y=side>0?-Math.PI/2:Math.PI/2; g.add(win); }
+      box(7.9,.45,7.4,0x555b60,bx,h+.22,0,g);
+    } else if(t<.78){ box(5.4,2.8,4.6,shopCols[(Math.random()*shopCols.length)|0],side*17.6,1.4,0,g); box(6.1,.16,5.3,0xffd83d,side*17.6,3.05,0,g); box(1.4,1.1,.9,0xffeaa7,side*17.4,1,1.2,g); box(1.1,.9,.8,0x74b9ff,side*17.8,0.85,-1.1,g);
+    } else { box(.45,2.4,.45,0x795548,side*17.8,1.2,0,g); const c=new THREE.Mesh(new THREE.SphereGeometry(2.1,8,8),mat(Math.random()<.15?0xc0392b:0x2e7d32)); c.position.set(side*17.8,4,0); g.add(c); }
+    /* utility pole + billboard sometimes */
+    if(Math.random()<.5){ box(.22,7.4,.22,0x5d4037,side*14.2,3.7,2.5,g); }
+    if(Math.random()<.3){ const bb=box(3.6,2,.18,shopCols[(Math.random()*shopCols.length)|0],side*15.4,5.4,-2,g); bb.rotation.y=side>0?-.35:.35; }
+  }
+  g.position.z=z; scene.add(g); return g;
+}
+for(let i=0;i<22;i++) scenery.push(makeScenery(-i*14+12));
+
+/* ================= VEHICLE BUILDERS ================= */
+function lights(g,zf,zb,w){ box(.34,.16,.06,0xfff6c9,-w/2,zf? .62:.62,zf,g); box(.34,.16,.06,0xfff6c9,w/2,.62,zf,g); box(.32,.14,.06,0xd63031,-w/2,.66,zb,g); box(.32,.14,.06,0xd63031,w/2,.66,zb,g); }
+function makeCar(suv=false){ const g=new THREE.Group(); const c=[0xdfe6e9,0x74b9ff,0xffeaa7,0xfd79a8,0x2d3436,0xe17055][(Math.random()*6)|0];
+  box(1.8,suv?.85:.6,3.6,c,0,suv?.75:.62,0,g); const cab=box(1.6,suv?.7:.52,1.8,0x22303a,0,suv?1.5:1.16,-.1,g); box(.08,.3,.5,0x22303a,-.95,suv?1.05:.95,-1,g); box(.08,.3,.5,0x22303a,.95,suv?1.05:.95,-1,g);
+  wheel(.34,-.85,.34,-1.15,g);wheel(.34,.85,.34,-1.15,g);wheel(.34,-.85,.34,1.15,g);wheel(.34,.85,.34,1.15,g); lights(g,-1.82,1.82,1.3); return g; }
+function makeVIP(){ const g=makeCar(); g.children[0].material=mat(0x111417); const pole=box(.05,1,.05,0xdfe6e9,.8,1.7,-1.4,g); box(.5,.3,.04,0x006a4e,.8,2.1,-1.4,g); box(.16,.3,.04,0xf42a41,.72,2.1,-1.38,g); return g; }
+let policeBlinkMats=[];
+function makePolice(){ const g=makeCar(); g.children[0].material=mat(0xf5f6fa); box(1.82,.3,3.62,0x2456a6,0,.72,0,g); const r=box(.5,.16,.4,0xff2222,-.3,1.52,-.1,g), b=box(.5,.16,.4,0x2266ff,.3,1.52,-.1,g); policeBlinkMats.push(r.material,b.material); return g; }
+function makeCNG(col=0x00b894){ const g=new THREE.Group(); box(1.45,.55,2.4,col,0,.58,0,g); box(1.36,.68,1.15,0x1e2b26,0,1.18,.42,g); box(1.5,.1,1.9,0x2d3436,0,1.58,-.05,g); wheel(.3,0,.3,-.9,g); wheel(.3,-.72,.3,.85,g); wheel(.3,.72,.3,.85,g); person(g,0xfdcb6e); g.children[g.children.length-5].position.z=.3; return g; }
+function makeAuto(){ return makeCNG([0x0984e3,0xe17055,0x6c5ce7][(Math.random()*3)|0]); }
+function makeBike(){ const g=new THREE.Group(); box(.3,.3,1.7,0xd63031,0,.55,0,g); wheel(.32,0,.32,-.75,g); wheel(.32,0,.32,.75,g); person(g,[0x74b9ff,0x55efc4,0xffeaa7][(Math.random()*3)|0]); return g; }
+function makeRickshaw(){ const g=new THREE.Group(); box(1.35,.14,1.15,0xd63031,0,.78,.42,g); box(1.35,.55,.12,0xe17055,0,1.1,.95,g); box(1.25,.09,2.1,0xfdcb6e,0,1.5,-.1,g); wheel(.42,0,.42,-.95,g); wheel(.42,-.68,.42,.62,g); wheel(.42,.68,.42,.62,g); person(g,0x00cec9); return g; }
+function makeBus(pink=false){ const g=new THREE.Group(); const c=pink?0xfd79a8:[0x00a381,0xf4b400,0x0984e3][(Math.random()*3)|0];
+  box(2.5,2.3,8.4,c,0,1.65,0,g); box(2.54,.78,7.9,0x22303a,0,2.15,0,g); box(2,.6,.1,0xdff3ff,0,1.5,-4.22,g); box(1.7,.5,.08,0xffffff,0,2.6,-4.24,g);
+  wheel(.52,-1.15,.52,-2.8,g);wheel(.52,1.15,.52,-2.8,g);wheel(.52,-1.15,.52,2.8,g);wheel(.52,1.15,.52,2.8,g);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(2.6,.09,8,28),matE(0x550000,0xff2222)); ring.rotation.x=Math.PI/2; ring.position.y=.12; ring.scale.set(1,1.7,1); g.add(ring); return g; }
+function makeTruck(){ const g=new THREE.Group(); box(2.3,1.25,2.3,0x57606f,0,1.15,-3.1,g); box(2.05,.6,.1,0x22303a,0,1.5,-4.26,g); box(2.55,2.4,5.4,[0xb2bec3,0xe67e22,0x74b9ff][(Math.random()*3)|0],0,1.85,.7,g);
+  wheel(.54,-1.12,.54,-3.2,g);wheel(.54,1.12,.54,-3.2,g);wheel(.54,-1.12,.54,1.9,g);wheel(.54,1.12,.54,1.9,g);
+  const ring=new THREE.Mesh(new THREE.TorusGeometry(2.6,.09,8,28),matE(0x550000,0xff2222)); ring.rotation.x=Math.PI/2; ring.position.y=.12; ring.scale.set(1,1.8,1); g.add(ring); return g; }
+function makePed(){ const g=new THREE.Group(); person(g,[0x74b9ff,0xfd79a8,0xffeaa7,0x55efc4,0xa29bfe,0x636e72][(Math.random()*6)|0]); return g; }
+function makePlayer(){ const g=new THREE.Group();
+  box(1.75,.55,3,0x0984e3,0,.58,0,g); box(1.65,.8,1.35,0xd63031,0,1.2,.55,g); box(1.66,.62,.1,0xbfefff,0,1.28,-.82,g); box(1.78,.13,2.3,0xe84393,0,1.68,.05,g);
+  const art=box(1.5,.8,.08,0xfdcb6e,0,.95,1.53,g); box(.5,.5,.09,0x00b894,-.4,.95,1.54,g); box(.5,.5,.09,0xe17055,.42,.95,1.54,g);
+  wheel(.35,0,.35,-1.08,g); wheel(.37,-.88,.37,1.02,g); wheel(.37,.88,.37,1.02,g);
+  person(g,0xffeaa7); const drv=g.children[g.children.length-6]; return g; }
+const player=makePlayer(); player.position.set(-5.5,0,0); scene.add(player);
+const headlight=new THREE.SpotLight(0xfff2b0,0,40,.5,.5); headlight.position.set(0,1,-1); player.add(headlight); headlight.target.position.set(0,0,-15); player.add(headlight.target);
+
+/* ================= TRAFFIC & OBSTACLES ================= */
+const VAL={car:9000,suv:12000,cng:4000,auto:4500,rickshaw:2500,bike:1800,shop:3000,ped:6000,vip:15000,police:9000,mirror:600,nearmiss:1200,cart:3500,banner:1200};
+const NAMES={car:'প্রাইভেট কার',suv:'এসইউভি',cng:'সিএনজি',auto:'ব্যাটারি অটো',rickshaw:'রিকশা',bike:'বাইক',shop:'দোকান/হকার স্টল',ped:'পথচারী (জরিমানা)',vip:'ভিআইপি গাড়ি',police:'পুলিশের গাড়ি',mirror:'আয়না ভাঙা',nearmiss:'নিয়ার-মিস বোনাস',cart:'ঠেলাগাড়ি উড়াল',banner:'ব্যানার ছেঁড়া'};
+const MY_LANES=[-11.3,-8.4,-5.5,-2.7], OP_LANES=[2.7,5.5,8.4,11.3];
+const traffic=[];
+const BUILDERS={car:()=>makeCar(false),suv:()=>makeCar(true),cng:()=>makeCNG(),auto:makeAuto,rickshaw:makeRickshaw,bike:makeBike,bus:()=>makeBus(false),pinkbus:()=>makeBus(true),truck:makeTruck,police:makePolice,vip:makeVIP,ped:makePed};
+function spawnTraffic(zMin=-200,zMax=-95,opposite=false){
+  let type;
+  if(opposite){ type=['car','suv','cng','bus','truck','auto'][(Math.random()*6)|0]; }
+  else { const pool=['car','car','suv','cng','cng','auto','auto','rickshaw','rickshaw','bike','bus','truck','ped','ped']; type=pool[(Math.random()*pool.length)|0];
+    const r=Math.random(); if(r<.035) type='vip'; else if(r<.07) type='police'; else if(r<.1) type='pinkbus'; }
+  const obj=BUILDERS[type](); const u={type,opposite,hit:false,mirrorDone:false,nearDone:false,spin:0,nudge:0,speed:0};
+  if(type==='ped'){ const side=Math.random()<.55; obj.position.set(side?(Math.random()<.5?-14.8:14.8):MY_LANES[(Math.random()*4)|0],0,zMin+Math.random()*(zMax-zMin)); u.speed=side?0:2; u.walker=side; if(side) u.walkPhase=Math.random()*6; }
+  else if(opposite){ obj.position.set(OP_LANES[(Math.random()*4)|0],0,zMin+Math.random()*(zMax-zMin)); obj.rotation.y=Math.PI; u.speed=10+Math.random()*7; }
+  else { obj.position.set(MY_LANES[(Math.random()*4)|0],0,zMin+Math.random()*(zMax-zMin)); u.speed=type==='bus'||type==='truck'||type==='pinkbus'?7.5:8.5+Math.random()*5.5; if(type==='rickshaw')u.speed=5; if(type==='bike')u.speed=13; }
+  obj.userData=u; scene.add(obj); traffic.push(obj); return obj;
+}
+const obstacles=[];
+function spawnObstacle(z){
+  const kind=['stall','stall','manhole','pothole','mud','cart'][(Math.random()*6)|0];
+  const g=new THREE.Group(); const u={kind,hit:false};
+  if(kind==='stall'){ box(2.3,1.7,1.9,0xe67e22,0,.85,0,g); box(2.7,.13,2.3,0xd35400,0,1.85,0,g); box(.9,.6,.7,0xffeaa7,-.5,2.1,0,g); box(.7,.5,.6,0x74b9ff,.6,2.05,.2,g); g.position.set(Math.random()<.6?-12.6:12.6,0,z); }
+  if(kind==='manhole'){ const c=new THREE.Mesh(new THREE.CircleGeometry(1,18),mat(0x0c0d0e)); c.rotation.x=-Math.PI/2; c.position.y=.13; g.add(c); box(.09,1.5,.09,0x795548,1.15,.75,0,g); box(.5,.34,.05,0xe63946,1.42,1.32,0,g); g.position.set(MY_LANES[(Math.random()*4)|0],0,z); }
+  if(kind==='pothole'){ const c=new THREE.Mesh(new THREE.CircleGeometry(.85,14),mat(0x4a6d8c)); c.rotation.x=-Math.PI/2; c.position.y=.13; g.add(c); g.position.set(MY_LANES[(Math.random()*4)|0],0,z); }
+  if(kind==='mud'){ const c=new THREE.Mesh(new THREE.PlaneGeometry(3.4,17),mat(0x6d4c41)); c.rotation.x=-Math.PI/2; c.position.y=.12; g.add(c); g.position.set(MY_LANES[(Math.random()*4)|0],0,z); }
+  if(kind==='cart'){ box(2.5,.9,1.6,0x8d6e63,0,.75,0,g); wheel(.4,-1,.4,.7,g); wheel(.4,1,.4,.7,g); const bn=box(2.5,1,.06,0xf5f0e6,0,1.75,-.4,g); bn.rotation.x=-.35; box(2.52,.24,.07,0xe63946,0,1.75,-.55,g).rotation.x=-.35; g.position.set(MY_LANES[(Math.random()*4)|0],0,z); }
+  g.userData=u; scene.add(g); obstacles.push(g); return g;
+}
+/* crowd (behind) + police chase car + grabbers */
+const crowd=new THREE.Group(); for(let i=0;i<10;i++){ const p=makePed(); p.position.set(-3.2+(i%5)*1.6,0,Math.floor(i/5)*1.7); crowd.add(p); } crowd.visible=false; scene.add(crowd);
+const chaseCar=makePolice(); chaseCar.visible=false; scene.add(chaseCar);
+const grabbers=[]; for(let i=0;i<3;i++){ const p=makePed(); p.visible=false; p.scale.setScalar(.92); player.add(p); grabbers.push(p); } grabbers[0].position.set(-1.25,.1,.7); grabbers[1].position.set(1.25,.1,.7); grabbers[2].position.set(0,.1,1.75);
+/* charge + bribe points */
+function makePoint(color){ const g=new THREE.Group(); const c=new THREE.Mesh(new THREE.CircleGeometry(1.7,20),new THREE.MeshBasicMaterial({color,transparent:true,opacity:.75})); c.rotation.x=-Math.PI/2; c.position.y=.14; g.add(c); const ring=new THREE.Mesh(new THREE.TorusGeometry(1.7,.07,8,26),new THREE.MeshBasicMaterial({color})); ring.rotation.x=Math.PI/2; ring.position.y=.15; g.add(ring); scene.add(g); return g; }
+const chargePts=[]; for(let i=0;i<3;i++){ const p=makePoint(0xffd83d); p.position.set(-12.4,0,-i*170-70); chargePts.push(p); }
+const bribePt=makePoint(0xff5da2); bribePt.visible=false;
+
+/* ================= STATE ================= */
+const AREAS=['Farmgate','Karwan Bazar','Shahbag','TSC','Gulistan','Motijheel','Jatrabari','Mirpur 10','Uttara','Hatirjheel'];
+const TOD=[{sky:0xa8d8f0,fog:0xa8d8f0,sun:1.3,amb:.8,name:'সকাল'},{sky:0x87b5d6,fog:0x87b5d6,sun:1.5,amb:.85,name:'দুপুর'},{sky:0xe8a58c,fog:0xe8a58c,sun:.95,amb:.65,name:'বিকেল'},{sky:0x1d2b4a,fog:0x1d2b4a,sun:.3,amb:.38,name:'রাত'}];
+let mode='menu', paused=false, speed=0, dist=0, loss=0, charge=100, combo=1, comboTimer=0, rage=0, grabCount=0, crowdGap=13, grabTimer=0;
+let policeChase=false, policeTimer=0, bribeUses=0, bribeActive=false, startGrace=0, areaIdx=0, areaShown='', mudSlow=false, shake=0, invuln=0, bombCD=0, runTime=0, chargingNow=false, savedThisRun=false;
+let counts={}, todIdx=1;
+const keys={};
+function applyTOD(i){ todIdx=i; const t=TOD[i]; scene.background.set(t.sky); scene.fog.color.set(t.fog); sun.intensity=t.sun; amb.intensity=t.amb; headlight.intensity=i===3?2.4:0; winMat.emissiveIntensity=i===3?1.6:.55; }
+function popMsg(t,ms=1200){ const el=$('msgPop'); el.textContent=t; el.style.opacity=1; clearTimeout(popMsg._t); popMsg._t=setTimeout(()=>el.style.opacity=0,ms); }
+function banner(t){ const el=$('areaBanner'); el.textContent=t; el.style.opacity=1; clearTimeout(banner._t); banner._t=setTimeout(()=>el.style.opacity=0,2600); }
+const TICKER=['আজও ঢাকার রাস্তায় জ্যাম অব্যাহত, চালকরা বলছেন — অভ্যাস হয়ে গেছে','লোডশেডিংয়ের সঙ্গে পাল্লা দিয়ে বাড়ছে মিশুকের চার্জের দাম','হকার উচ্ছেদ অভিযান শেষে হকাররা বলছেন — কাল আবার দেখা হচ্ছে','রাস্তা খোঁড়া শেষ না হতেই নতুন করে খোঁড়ার পরিকল্পনা চূড়ান্ত','ট্রাফিক পুলিশের পরামর্শ: জ্যামে ধৈর্য ধরুন, হর্ন বাজানোয় জ্যাম কমে না','মেট্রো চললেও নিচের রাস্তার জ্যাম আগের মতোই, জানালেন ভুক্তভোগীরা'];
+$('tickerTrack').textContent=(TICKER.join('  •  ')+'  •  ')+(TICKER.join('  •  ')+'  •  ');
+function addLoss(type,base){ const wrongWay=player.position.x>1.6; let mult=combo*(wrongWay?1.5:1); if(type==='shop'&&hawkerZone()) mult=Math.min(mult,3)*0.999; const amt=Math.round(base*mult/10)*10; loss+=amt; counts[type]=(counts[type]||0)+1; combo=Math.min(5,combo+0.5); comboTimer=4; return amt; }
+function hawkerZone(){ return (Math.floor(dist/600)%2===1); }
+function updateHUD(){ $('lossTxt').textContent='৳'+fmt(loss); $('chargeTxt').textContent=Math.max(0,Math.ceil(charge))+'%'; const cb=$('chargeBar'); cb.style.width=Math.max(0,charge)+'%'; cb.style.background=charge<25?'#e63946':charge<55?'#f4b400':'#2ecc71';
+  $('comboTxt').textContent=combo>1?('কম্বো x'+combo.toFixed(1)):'';
+  $('grabInfo').style.display=grabCount>0?'block':'none'; $('grabTxt').textContent=grabCount;
+  let best=null,bd=1e9; for(const p of chargePts){ const d=-(p.position.z); if(p.position.z<2&&d<bd){bd=d;best=p;} }
+  $('navPill').textContent=bribeActive?'🩷 মামলা মেটানোর জায়গা: সামনে '+Math.max(0,Math.round(-bribePt.position.z))+' মি':(best?('⚡ চার্জিং পয়েন্ট: '+Math.round(bd)+' মি সামনে'):'⚡ চার্জিং পয়েন্ট: —');
+  $('navPill').style.color=bribeActive?'#ff9ecf':'#ffe066';
+  drawMinimap(); }
+function drawMinimap(){ const cv=$('minimap'),ctx=cv.getContext('2d'); const W=236,C=W/2; ctx.clearRect(0,0,W,W);
+  ctx.fillStyle='rgba(12,28,44,.9)'; ctx.beginPath(); ctx.arc(C,C,C,0,7); ctx.fill();
+  ctx.strokeStyle='#8d99a6'; ctx.lineWidth=13; for(const lx of [-7,7]){ ctx.beginPath(); ctx.moveTo(C+lx*4.4,C+95); ctx.lineTo(C+lx*4.4,C-95); ctx.stroke(); }
+  ctx.strokeStyle='#f4b400'; ctx.lineWidth=3; ctx.setLineDash([7,7]); ctx.beginPath(); ctx.moveTo(C,C+95); ctx.lineTo(C,C-95); ctx.stroke(); ctx.setLineDash([]);
+  const dot=(x,z,col,r=6)=>{ const mx=C+x*4.4, my=C+90+z*0.52; if(my<8||my>W-8)return; ctx.fillStyle=col; ctx.beginPath(); ctx.arc(mx,my,r,0,7); ctx.fill(); };
+  for(const p of chargePts) dot(p.position.x,p.position.z,'#ffd83d',7);
+  if(bribeActive) dot(bribePt.position.x,bribePt.position.z,'#ff5da2',8);
+  if(policeChase) dot(chaseCar.position.x,6,'#ff4444',7);
+  for(const t of traffic){ if(t.userData.type==='bus'||t.userData.type==='truck') dot(t.position.x,t.position.z,'#cccccc',4); }
+  ctx.fillStyle='#2ecc71'; ctx.beginPath(); ctx.moveTo(C+player.position.x*4.4,C+78); ctx.lineTo(C+player.position.x*4.4-8,C+98); ctx.lineTo(C+player.position.x*4.4+8,C+98); ctx.fill(); }
+
+/* ================= FLOW ================= */
+function clearWorld(){ for(const t of traffic)scene.remove(t); traffic.length=0; for(const o of obstacles)scene.remove(o); obstacles.length=0; policeBlinkMats=[]; }
+function reset(startArea){
+  clearWorld(); speed=0;dist=0;loss=0;charge=100;combo=1;comboTimer=0;rage=0;grabCount=0;crowdGap=13;grabTimer=0;policeChase=false;policeTimer=0;bribeUses=0;bribeActive=false;startGrace=12;shake=0;invuln=0;bombCD=0;runTime=0;savedThisRun=false;counts={};
+  player.position.set(-5.5,0,0); player.rotation.set(0,0,0); player.position.y=0;
+  grabbers.forEach(g=>g.visible=false); crowd.visible=false; chaseCar.visible=false; bribePt.visible=false;
+  for(let i=0;i<16;i++) spawnTraffic(); for(let i=0;i<5;i++) spawnTraffic(-220,-150,true);
+  for(let i=0;i<6;i++) spawnObstacle(-60-i*45-Math.random()*30);
+  chargePts.forEach((p,i)=>p.position.set(-12.4,0,-i*170-70));
+  areaIdx=Math.max(0,AREAS.indexOf(startArea)); if(areaIdx<0)areaIdx=0; areaShown='';
+  applyTOD((Math.random()*4)|0);
+  updateHUD();
+}
+function startRun(){ const sel=$('locSel').value; const area=sel==='Random'?AREAS[(Math.random()*AREAS.length)|0]:sel; reset(area); mode='play'; $('menu').style.display='none'; $('hud').style.display='block'; $('ticker').style.display='flex'; $('touch').classList.add('on'); banner('📍 '+area+' — সোজা চলো! ('+TOD[todIdx].name+')'); tone(520,.15); }
+function goHome(){ mode='menu'; paused=false; $('pauseModal').classList.remove('open'); $('overScreen').style.display='none'; $('hud').style.display='none'; $('ticker').style.display='none'; $('touch').classList.remove('on'); $('menu').style.display='flex'; reset(AREAS[0]); }
+function gameOver(reason,headline){
+  if(mode!=='play')return; mode='over';
+  renderer.render(scene,camera); try{ const url=renderer.domElement.toDataURL('image/png'); const img=$('crashPhoto'); img.src=url; img.style.display='block'; }catch(e){}
+  $('overHeadline').textContent=headline; $('overReason').textContent=reason;
+  $('finalLoss').textContent=fmt(loss); $('finalDist').textContent=Math.floor(dist); $('finalArea').textContent=AREAS[areaIdx%AREAS.length]; $('couldBuy').textContent=fmt(loss/80); $('paperDate').textContent=new Date().toLocaleDateString('bn-BD');
+  let rows=''; for(const k in counts) rows+='<tr><td>'+NAMES[k]+' × '+counts[k]+'</td><td>৳'+fmt((VAL[k]||0)*counts[k])+'</td></tr>';
+  $('breakTable').innerHTML=rows||'<tr><td>কিছুই ভাঙেননি — সংবাদ হওয়ার মতো না!</td><td>৳0</td></tr>';
+  $('saveScoreBtn').disabled=false; $('saveScoreBtn').textContent='নাম তোলো';
+  $('hud').style.display='none'; $('ticker').style.display='none'; $('touch').classList.remove('on'); $('overScreen').style.display='flex'; sndCrash(true);
+}
+function getMW(){ try{return JSON.parse(localStorage.getItem('blp_mw')||'[]')}catch(e){return[]} }
+function renderMW(week){ const list=getMW().filter(e=>!week||(Date.now()-e.t)<7*864e5).sort((a,b)=>b.loss-a.loss).slice(0,20);
+  $('mwList').innerHTML=list.length?list.map((e,i)=>'<div><span>'+(i+1)+'. '+e.name+'</span><b>৳'+fmt(e.loss)+'</b></div>').join(''):'<p>এখনো কোনো রেকর্ড নেই — প্রথম নামটা তোমারই হোক!</p>'; }
+$('saveScoreBtn').onclick=()=>{ if(savedThisRun)return; const name=($('nameInput').value||'অজানা ড্রাইভার').trim()||'অজানা ড্রাইভার'; const l=getMW(); l.push({name,loss:Math.round(loss),dist:Math.floor(dist),t:Date.now()}); localStorage.setItem('blp_mw',JSON.stringify(l)); savedThisRun=true; $('saveScoreBtn').disabled=true; $('saveScoreBtn').textContent='✓ তোলা হয়েছে'; };
+$('shareBtn').onclick=async()=>{ const txt='ব্রেক লেস পরিবহনে আমি ৳'+fmt(loss)+' জাতীয় ক্ষতি করেছি '+Math.floor(dist)+' মিটার গিয়ে! তুমি পারবে তো? 🛺'; try{ if(navigator.share) await navigator.share({text:txt}); else { await navigator.clipboard.writeText(txt); popMsg('📋 শেয়ার লেখা কপি হয়েছে!'); } }catch(e){} };
+/* modals */
+document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$(b.dataset.close).classList.remove('open'));
+$('aboutBtn').onclick=()=>$('aboutModal').classList.add('open');
+$('guideBtn').onclick=()=>$('guideModal').classList.add('open');
+$('discBtn').onclick=()=>$('discModal').classList.add('open');
+$('mwBtn').onclick=()=>{ renderMW(true); $('mwModal').classList.add('open'); };
+$('mwWeek').onclick=()=>{ $('mwWeek').classList.add('act'); $('mwAll').classList.remove('act'); renderMW(true); };
+$('mwAll').onclick=()=>{ $('mwAll').classList.add('act'); $('mwWeek').classList.remove('act'); renderMW(false); };
+$('howBtn').onclick=()=>{ const h=$('howto'); h.style.display=h.style.display==='block'?'none':'block'; };
+$('playBtn').onclick=startRun; $('againBtn').onclick=()=>{ $('overScreen').style.display='none'; startRun(); };
+$('menuBtn2').onclick=()=>{ $('overScreen').style.display='none'; goHome(); };
+function setPaused(v){ if(mode!=='play')return; paused=v; $('pauseModal').classList.toggle('open',v); if(!v){ let n=3; const cd=$('countDown'); cd.style.display='block'; cd.textContent=n; const iv=setInterval(()=>{ n--; if(n<=0){ clearInterval(iv); cd.style.display='none'; } else cd.textContent=n; },550); } }
+$('pauseBtn').onclick=()=>setPaused(true);
+$('resumeBtn').onclick=()=>setPaused(false);
+$('restartBtn').onclick=()=>{ $('pauseModal').classList.remove('open'); paused=false; startRun(); };
+$('homeBtn').onclick=()=>goHome();
+function toggleSound(){ muted=!muted; $('soundBtn').textContent=muted?'🔇':'🔊'; $('soundBtn2').textContent=muted?'🔇 সাউন্ড: বন্ধ':'🔊 সাউন্ড: চালু'; }
+$('soundBtn').onclick=toggleSound; $('soundBtn2').onclick=toggleSound;
+/* ================= INPUT ================= */
+addEventListener('keydown',e=>{ keys[e.code]=true;
+  if(e.code==='Enter'&&mode==='menu') startRun();
+  else if(e.code==='KeyR'&&mode==='over'){ $('overScreen').style.display='none'; startRun(); }
+  else if(e.code==='Escape'&&mode==='over'){ $('overScreen').style.display='none'; goHome(); }
+  else if((e.code==='KeyP'||e.code==='Escape')&&mode==='play') setPaused(!paused);
+  if(e.code==='KeyM') toggleSound();
+  if(e.code==='KeyH'&&mode==='play'&&!paused) doHorn();
+  if(e.code==='KeyB'&&mode==='play'&&!paused) doBomb();
+  if(['ArrowUp','ArrowDown','Space'].includes(e.code)) e.preventDefault(); });
+addEventListener('keyup',e=>keys[e.code]=false);
+function bindBtn(id,code,fn){ const el=$(id); const on=e=>{e.preventDefault(); if(fn)fn(); else keys[code]=true;}; const off=e=>{e.preventDefault(); if(!fn)keys[code]=false;};
+  el.addEventListener('touchstart',on,{passive:false}); el.addEventListener('touchend',off,{passive:false}); el.addEventListener('mousedown',on); el.addEventListener('mouseup',off); el.addEventListener('touchcancel',off,{passive:false}); }
+bindBtn('tGas','KeyW'); bindBtn('tBrake','KeyS'); bindBtn('tLeft','KeyA'); bindBtn('tRight','KeyD'); bindBtn('tBoost','Space'); bindBtn('tHorn',null,()=>mode==='play'&&doHorn()); bindBtn('tBomb',null,()=>mode==='play'&&doBomb());
+function doHorn(){ sndHorn(); for(const t of traffic){ const u=t.userData; if(u.opposite||u.hit)continue; const dz=t.position.z-player.position.z; if(dz<-4&&dz>-24&&Math.abs(t.position.x-player.position.x)<3&&['rickshaw','auto','bike','cng'].includes(u.type)) u.nudge=(t.position.x<=player.position.x?-2.2:2.2); } }
+function doBomb(){ if(bombCD>0)return; bombCD=5; sndBomb(); shake=Math.max(shake,.18); for(const t of traffic){ const u=t.userData; if(u.opposite||u.hit)continue; const dz=t.position.z-player.position.z; if(dz<-4&&dz>-28&&Math.abs(t.position.x-player.position.x)<4&&['car','suv','cng','auto'].includes(u.type)) u.nudge=(t.position.x<=player.position.x?-3.4:3.4); } }
+/* ================= MAIN LOOP ================= */
+const clock=new THREE.Clock(); let vy=0, airborne=false, blinkT=0, sirenT=0;
+reset(AREAS[0]); mode='menu'; applyTOD(1);
+function scrollWorld(dz,dt){
+  for(const d of dashes){ d.position.z+=dz; if(d.position.z>14)d.position.z-=34*13; }
+  for(const s of scenery){ s.position.z+=dz; if(s.position.z>18)s.position.z-=22*14; }
+  for(const h of hedges){ h.position.z+=dz; if(h.position.z>14)h.position.z-=hedges.length*12; }
+  for(const p of pillars){ p.position.z+=dz; if(p.position.z>16)p.position.z-=10*30; }
+  for(const p of chargePts){ p.position.z+=dz; if(p.position.z>15)p.position.z-=3*170; }
+  if(bribeActive){ bribePt.position.z+=dz; }
+}
+function animate(){
+  requestAnimationFrame(animate);
+  const dt=Math.min(clock.getDelta(),.05); blinkT+=dt;
+  for(const m of policeBlinkMats) m.emissive=new THREE.Color(blinkT%0.6<0.3?0x661111:0x111166);
+  if(mode==='menu'){ scrollWorld(7*dt,dt);
+    for(let i=traffic.length-1;i>=0;i--){ const t=traffic[i],u=t.userData; t.position.z+=(u.opposite?(7+u.speed):(7-u.speed))*dt; if(t.position.z>16||t.position.z<-300){ scene.remove(t); traffic.splice(i,1); spawnTraffic(-210,-170,Math.random()<.3);} }
+    camera.position.set(Math.sin(clock.elapsedTime*.14)*2.5,5.6,11.5); camera.lookAt(0,1.2,-14); renderer.render(scene,camera); return; }
+  if(mode!=='play'||paused){ renderer.render(scene,camera); return; }
+  runTime+=dt; if(startGrace>0)startGrace-=dt; if(invuln>0)invuln-=dt; if(bombCD>0)bombCD-=dt;
+  /* --- driving --- */
+  const boost=keys['Space']||keys['ShiftLeft']||keys['ShiftRight'];
+  let accel=0;
+  if(keys['KeyW']||keys['ArrowUp']) accel+=15;
+  if(boost) accel+=19;
+  if(keys['KeyS']||keys['ArrowDown']) accel-=17;
+  speed+=accel*dt; speed-=speed*.22*dt; if(accel<=0) speed-=1.1*dt;
+  let cap=boost?40:31; if(charge<15)cap*=.48; if(mudSlow)cap*=.45; speed=clamp(speed,0,cap);
+  const steer=((keys['KeyA']||keys['ArrowLeft'])?-1:0)+((keys['KeyD']||keys['ArrowRight'])?1:0);
+  player.position.x=clamp(player.position.x+steer*(6.5+speed*.38)*dt,-12.7,12.7);
+  player.rotation.z=-steer*.06; player.rotation.y=-steer*.13;
+  /* median hedge bump */
+  if(Math.abs(player.position.x)<1.35){ for(const h of hedges){ if(Math.abs(h.position.z)<4.6){ player.position.x=player.position.x<0?-1.45:1.45; if(speed>8){speed*=.55; shake=Math.max(shake,.15); tone(120,.15,'sawtooth',.12);} break; } } }
+  dist+=speed*dt;
+  charge-=dt*(.34+speed*.017+(boost&&speed>4?.55:0)); if(charge<0)charge=0;
+  if(comboTimer>0){ comboTimer-=dt; if(comboTimer<=0)combo=1; }
+  const dz=speed*dt; scrollWorld(dz,dt);
+  mudSlow=false;
+  /* --- airborne (cart ramp) --- */
+  if(airborne){ vy-=22*dt; player.position.y+=vy*dt; player.rotation.x=-vy*.012; if(player.position.y<=0){ player.position.y=0; player.rotation.x=0; airborne=false; shake=Math.max(shake,.2); sndCrash(false);} }
+  /* --- traffic --- */
+  for(let i=traffic.length-1;i>=0;i--){ const t=traffic[i],u=t.userData;
+    if(u.opposite) t.position.z+=dz+u.speed*dt; else t.position.z+=dz-u.speed*dt;
+    if(u.nudge){ t.position.x+=u.nudge*dt*2.4; u.nudge*=Math.pow(.12,dt); if(Math.abs(u.nudge)<.05)u.nudge=0; t.position.x=clamp(t.position.x,-15.5,15.5); }
+    if(u.spin){ t.rotation.y+=u.spin*dt; t.position.x+=u.spin*1.6*dt; }
+    if(u.walker){ t.position.x+=Math.sin(clock.elapsedTime*1.3+u.walkPhase)*.35*dt*3; }
+    /* scatter: peds in road step aside when close */
+    if(u.type==='ped'&&!u.walker&&!u.hit&&t.position.z<2&&t.position.z>-13&&Math.abs(t.position.x-player.position.x)<2.2&&speed>4){ t.position.x+=(t.position.x<player.position.x?-1:1)*5.5*dt; }
+    /* near-miss / mirror checks when passing player z */
+    if(!u.opposite&&!u.hit&&u.prevZ!==undefined&&u.prevZ<0&&t.position.z>=0){
+      const dxa=Math.abs(t.position.x-player.position.x);
+      if((u.type==='bus'||u.type==='truck'||u.type==='pinkbus')&&!u.nearDone&&dxa>1.9&&dxa<3.4){ u.nearDone=true; const a=addLoss('nearmiss',VAL.nearmiss); popMsg('😅 নিয়ার-মিস! +৳'+fmt(a)); tone(980,.1,'sine',.08); }
+      if((u.type==='car'||u.type==='suv')&&!u.mirrorDone&&dxa>=1.55&&dxa<2.1){ u.mirrorDone=true; const a=Math.round(VAL.mirror*(player.position.x>1.6?1.5:1)); loss+=a; counts.mirror=(counts.mirror||0)+1; popMsg('🪞 আয়না গেছে! +৳'+fmt(a)); tone(1200,.07,'square',.07); }
+    }
+    u.prevZ=t.position.z;
+    /* collision */
+    if(!u.hit&&invuln<=0&&!airborne){ const dxa=Math.abs(t.position.x-player.position.x), dza=Math.abs(t.position.z-player.position.z);
+      const big=u.type==='bus'||u.type==='truck'||u.type==='pinkbus'; const hd=big?3.6:1.7;
+      if(dxa<(big?2.1:1.55)&&dza<hd){
+        if(big){ gameOver(u.type==='pinkbus'?'গোলাপি বাসের সামনে এসে মিশুকটি থেমে গেল — বাসটি ব্রেক করলেও ছোঁয়া এড়ানো যায়নি।':'বাস/ট্রাকের সঙ্গে মুখোমুখি ধাক্কায় মিশুকের দৌড় সেখানেই শেষ।', u.type==='pinkbus'?'গোলাপি বাসে থামল ব্রেক লেস পরিবহন!':'বাস-ট্রাকেই শেষ হলো তাণ্ডব!'); return; }
+        u.hit=true; u.spin=(t.position.x<player.position.x?-1:1)*(2+Math.random()*2); invuln=.65; shake=Math.max(shake,.3); speed*=.68;
+        let base=VAL[u.type]||3000;
+        if(u.type==='vip'){ const a=addLoss('vip',base); popMsg('🎌 ভিআইপি গাড়ি! +৳'+fmt(a)); banner('⚠️ ভিআইপি গাড়িতে ধাক্কা! মামলা হতে পারে!'); }
+        else if(u.type==='police'){ const a=addLoss('police',base); popMsg('🚓 পুলিশের গাড়ি! +৳'+fmt(a)+' — ধাওয়া শুরু!'); startPoliceChase(); }
+        else if(u.type==='ped'){ const a=addLoss('ped',base); rage=Math.min(100,rage+30); popMsg('😱 পথচারী! +৳'+fmt(a)+' — জনতা ক্ষেপেছে!'); }
+        else { const a=addLoss(u.type==='car'?'car':u.type,base); rage=Math.min(100,rage+(u.type==='car'||u.type==='suv'?12:8)); popMsg('💥 '+NAMES[u.type]+'! +৳'+fmt(a)); }
+        sndCrash(false);
+      }
+    }
+    if(t.position.z>20||t.position.z<-300){ scene.remove(t); traffic.splice(i,1); spawnTraffic(-210,-165,Math.random()<.28); }
+  }
+  /* --- obstacles --- */
+  for(let i=obstacles.length-1;i>=0;i--){ const o=obstacles[i],u=o.userData; o.position.z+=dz;
+    if(!u.hit){ const dxa=Math.abs(o.position.x-player.position.x), dza=Math.abs(o.position.z-player.position.z);
+      if(u.kind==='mud'&&dxa<2.4&&dza<8.5) mudSlow=true;
+      if(dxa<1.7&&dza<1.7){
+        if(u.kind==='manhole'&&startGrace<=0){ gameOver('লাল কাপড়ের সতর্কতা উপেক্ষা করে মিশুকটি সোজা খোলা ম্যানহোলে পড়ে গেল।','ম্যানহোলেই ডুবল ব্রেক লেস পরিবহন!'); return; }
+        if(u.kind==='pothole'&&!u.hit){ u.hit=true; speed*=.6; shake=Math.max(shake,.3); player.position.y=.18; setTimeout(()=>{if(!airborne)player.position.y=0;},130); tone(95,.2,'sawtooth',.14); popMsg('🕳️ গর্ত! ঝাঁকুনি!'); }
+        if(u.kind==='stall'){ u.hit=true; o.rotation.z=.5; o.position.y=.3; const a=addLoss('shop',VAL.shop); rage=Math.min(100,rage+(hawkerZone()?16:7)); popMsg('🏪 '+(hawkerZone()?'হকারের দোকান':'চায়ের দোকান')+'! +৳'+fmt(a)); sndCrash(false); speed*=.75; }
+        if(u.kind==='cart'){ u.hit=true; airborne=true; vy=8.5; const a1=addLoss('cart',VAL.cart); const a2=addLoss('banner',VAL.banner); popMsg('🛒 ঠেলাগাড়িতে উড়াল! +৳'+fmt(a1+a2)); tone(500,.25,'sine',.12); }
+      }
+    }
+    if(o.position.z>20){ scene.remove(o); obstacles.splice(i,1); spawnObstacle(-230-Math.random()*60); }
+  }
+  /* --- charging --- */
+  chargingNow=false;
+  for(const p of chargePts){ if(Math.abs(p.position.x-player.position.x)<2&&Math.abs(p.position.z-player.position.z)<2.6&&speed<2.5&&charge<100){ chargingNow=true; charge=Math.min(100,charge+24*dt); if(Math.random()<dt*3)sndDing(); if(Math.random()<.3)amb.intensity=TOD[todIdx].amb*.45; } }
+  if(!chargingNow) amb.intensity=TOD[todIdx].amb;
+  /* --- crowd chase --- */
+  if(rage>45){ crowd.visible=true; crowdGap+=((speed>24?2: speed>13?.4:-3.1))*dt*2.2; crowdGap=clamp(crowdGap,4.5,13);
+    crowd.position.set(player.position.x*.88,0,crowdGap); crowd.rotation.y=Math.PI;
+    if(crowdGap<6.4){ grabTimer+=dt; if(speed>26||Math.abs(keys['KeyA']?1:0-(keys['KeyD']?1:0))>0&&Math.random()<dt*2){} if(grabTimer>1.6){ grabTimer=0; if(grabCount<3){ grabCount++; grabbers[grabCount-1].visible=true; popMsg('✊ জনতা ধরে ফেলেছে! ('+grabCount+'/3)'); sndCrash(false); if(grabCount>=3){ gameOver('তিনজন জড়িয়ে ধরার পর মিশুক আর এগোতে পারল না — জনতার হাতে ধরা পড়ল চালক।','জনতার হাতে ধরা ব্রেক লেস পরিবহন!'); return; } } } }
+    else grabTimer=Math.max(0,grabTimer-dt);
+    if(grabCount>0&&speed<2){ gameOver('ধরা পড়া অবস্থায় মিশুক থেমে যেতেই জনতা ঘিরে ধরল।','থামলেই বিপদ — জনতার ঘেরাওয়ে শেষ!'); return; }
+    /* shake off grabbers with boost + sharp steer */
+    if(grabCount>0&&(keys['Space'])&&Math.abs((keys['KeyA']?-1:0)+(keys['KeyD']?1:0))>0&&Math.random()<dt*.9){ grabCount--; grabbers[grabCount].visible=false; crowdGap=Math.min(13,crowdGap+3); popMsg('💨 একজনকে ঝেড়ে ফেললে!'); }
+  } else { crowd.visible=false; crowdGap=13; }
+  if(rage>0)rage=Math.max(0,rage-dt*1.15);
+  /* --- police chase --- */
+  if(policeChase){ policeTimer-=dt; sirenT-=dt; if(sirenT<=0){ sndSiren(); sirenT=1.1; }
+    chaseCar.visible=true; const targetGap=speed>26?11: speed>15?8:5.2; chaseCar.position.z+= ((targetGap-chaseCar.position.z))*dt*1.6; chaseCar.position.z=clamp(chaseCar.position.z,4,15); chaseCar.position.x+=(player.position.x-chaseCar.position.x)*dt*2.2;
+    if(!bribeActive){ bribeActive=true; bribePt.visible=true; bribePt.position.set(-3.5,0,-75); }
+    if(chaseCar.position.z<5.6&&speed<3){ policeTimer-=dt*2; if(policeTimer<6){ gameOver('পালাতে গিয়ে ধীর হয়ে যেতেই পুলিশ এসে মিশুক থামিয়ে মামলা দিল।','মামলায় আটক ব্রেক লেস পরিবহন!'); return; } }
+    if(policeTimer<=0){ policeChase=false; chaseCar.visible=false; bribeActive=false; bribePt.visible=false; popMsg('😮‍💨 পুলিশ পিছু ছেড়েছে!'); }
+  }
+  /* --- bribe point --- */
+  if(bribeActive&&bribePt.visible){ if(Math.abs(bribePt.position.x-player.position.x)<2.2&&Math.abs(bribePt.position.z-player.position.z)<2.6&&speed<6){
+    const pct=Math.min(.6,.2+.1*bribeUses); const cost=Math.max(500,Math.round(loss*pct));
+    if(loss<500){ popMsg('👮 "এত কমে চা-ও হয় না!" — মামলা মিটল না'); bribePt.position.z=-90; }
+    else { loss-=cost; bribeUses++; policeChase=false; chaseCar.visible=false; rage=Math.max(0,rage-50); bribeActive=false; bribePt.visible=false; grabCount=0; grabbers.forEach(g=>g.visible=false); popMsg('🍵 চা-খরচ ৳'+fmt(cost)+' — মামলা শেষ!'); sndDing(); }
+  } if(bribePt.position.z>15){ bribePt.position.z=-85; } }
+  /* --- area banners --- */
+  const ai=Math.floor(dist/450)%AREAS.length; const startOff=areaIdx; const cur=AREAS[(startOff+ai)%AREAS.length];
+  if(cur!==areaShown){ areaShown=cur; areaIdx=(startOff+ai)%AREAS.length; if(runTime>2)banner('📍 '+cur); }
+  /* --- end: charge empty & stopped --- */
+  if(charge<=0&&speed<.4){ gameOver('ব্যাটারির চার্জ শেষ — মিশুকটি রাস্তার মাঝখানে চুপচাপ থেমে রইল।','চার্জ শেষ! মাঝরাস্তায় থামল ব্রেক লেস'); return; }
+  /* --- camera --- */
+  if(shake>0)shake-=dt;
+  camera.position.set(player.position.x*.6+(shake>0?(Math.random()-.5)*shake*1.6:0),6.1+(shake>0?(Math.random()-.5)*shake:0),11.8);
+  camera.lookAt(player.position.x,1.1,-14);
+  updateHUD(); renderer.render(scene,camera);
+}
+animate();
+addEventListener('resize',()=>{ camera.aspect=innerWidth/innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth,innerHeight); });
+</script>
+</body>
+</html>
