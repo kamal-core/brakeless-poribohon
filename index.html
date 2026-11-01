@@ -275,12 +275,16 @@ const camera=new THREE.PerspectiveCamera(62,innerWidth/innerHeight,.1,500);
 const renderer=new THREE.WebGLRenderer({antialias:true,preserveDrawingBuffer:true});
 renderer.setSize(innerWidth,innerHeight);
 renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.shadowMap.enabled=true; renderer.shadowMap.type=THREE.PCFSoftShadowMap;
 $('game').appendChild(renderer.domElement);
 const amb=new THREE.AmbientLight(0xffffff,.8); scene.add(amb);
 const sun=new THREE.DirectionalLight(0xfff2cc,1.35); sun.position.set(25,45,12); scene.add(sun);
+sun.castShadow=true; sun.shadow.mapSize.set(innerWidth<800?1024:2048,innerWidth<800?1024:2048);
+sun.shadow.camera.left=-55; sun.shadow.camera.right=55; sun.shadow.camera.top=60; sun.shadow.camera.bottom=-80; sun.shadow.camera.near=1; sun.shadow.camera.far=160; sun.shadow.bias=-0.0004;
+sun.target.position.set(0,0,-18); scene.add(sun.target);
 const mat=c=>new THREE.MeshLambertMaterial({color:c});
 const matE=(c,e)=>new THREE.MeshLambertMaterial({color:c,emissive:e});
-function box(w,h,d,c,x=0,y=0,z=0,p,e){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), e?matE(c,e):mat(c)); m.position.set(x,y,z); if(p)p.add(m); return m; }
+function box(w,h,d,c,x=0,y=0,z=0,p,e){ const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d), e?matE(c,e):mat(c)); m.position.set(x,y,z); m.castShadow=true; m.receiveShadow=true; if(p)p.add(m); return m; }
 function wheel(r,x,y,z,p){ const w=new THREE.Mesh(new THREE.CylinderGeometry(r,r,.2,14),mat(0x16181a)); w.rotation.z=Math.PI/2; w.position.set(x,y,z); p.add(w); const hub=new THREE.Mesh(new THREE.CylinderGeometry(r*.45,r*.45,.22,10),mat(0xbdc3c7)); hub.rotation.z=Math.PI/2; hub.position.set(x,y,z); p.add(hub); return w; }
 function person(p,shirt,pants=0x2d3436,skin=0xe8b88a){ box(.46,.62,.26,shirt,0,1.02,0,p); box(.4,.4,.4,skin,0,1.55,0,p); box(.15,.58,.15,pants,-.13,.3,0,p); box(.15,.58,.15,pants,.13,.3,0,p); box(.13,.5,.13,shirt,-.32,1.05,0,p); box(.13,.5,.13,shirt,.32,1.05,0,p); }
 
@@ -293,7 +297,11 @@ box(2,.14,ROAD_LEN,0x565d63,0,.03,ROAD_C,scene);                    // median ba
 box(3.6,.1,ROAD_LEN,0x8d6e63,-14.9,.0,ROAD_C,scene);                // left sidewalk
 box(3.6,.1,ROAD_LEN,0x8d6e63, 14.9,.0,ROAD_C,scene);                // right sidewalk
 for(const sx of [-13.1,13.1,-1.05,1.05]) box(.35,.22,ROAD_LEN,0xf4b400,sx,.08,ROAD_C,scene); // yellow kerbs
-box(6.5,.5,ROAD_LEN,0x707880,0,11.4,ROAD_C,scene);                  // metro deck overhead
+const metroGroup=new THREE.Group(); scene.add(metroGroup);          // metro: only in metro-corridor areas
+box(6.5,.5,ROAD_LEN,0x707880,0,11.4,ROAD_C,metroGroup);              // metro deck overhead
+const flyoverGroup=new THREE.Group(); scene.add(flyoverGroup);      // flyover: Jatrabari side
+box(9,.55,ROAD_LEN,0x7d838a,7,9.8,ROAD_C,flyoverGroup);              // flyover deck over opposite carriageway
+box(9.3,.5,.4,0x9aa0a3,7,10.35,ROAD_C,flyoverGroup);                 // flyover parapet hint (near end)
 for(const wx of [-16.9,16.9]) box(.18,7.6,.18,0x4a4a4a,wx,3.8,ROAD_C,scene); // wire poles (long visual anchors at ends only)
 /* lane dashes (recycled) */
 const dashes=[];
@@ -302,7 +310,9 @@ for(const lx of [-10,-7,-4,4,7,10]) for(let i=0;i<34;i++) dashes.push(box(.28,.0
 const hedges=[];
 for(let i=0;i<26;i++){ if(i%6===5) continue; const g=new THREE.Group(); box(1.1,.55,10.5,0x2e7d32,0,.45,0,g); box(1.14,.14,10.5,0xf4b400,0,.16,0,g); g.position.z=-i*12+8; scene.add(g); hedges.push(g); }
 const pillars=[];
-for(let i=0;i<10;i++){ const g=new THREE.Group(); box(1.3,11,1.3,0x9aa0a3,0,5.5,0,g); box(3.4,.7,2,0x878d91,0,10.9,0,g); g.position.z=-i*30+6; scene.add(g); pillars.push(g); }
+for(let i=0;i<10;i++){ const g=new THREE.Group(); box(1.3,11,1.3,0x9aa0a3,0,5.5,0,g); box(3.4,.7,2,0x878d91,0,10.9,0,g); g.position.z=-i*30+6; metroGroup.add(g); pillars.push(g); }
+const flyPillars=[];
+for(let i=0;i<10;i++){ const g=new THREE.Group(); box(1.5,9.6,1.5,0x8b9096,7,4.8,0,g); box(4.5,.7,2.2,0x7d838a,7,9.4,0,g); g.position.z=-i*30-9; flyoverGroup.add(g); flyPillars.push(g); }
 
 /* ================= SCENERY ================= */
 const shopCols=[0xe67e22,0x16a085,0x8e44ad,0xd35400,0x2980b9,0xc0392b,0x27ae60,0xf39c12];
@@ -319,6 +329,8 @@ function makeScenery(z){
     } else { box(.45,2.4,.45,0x795548,side*17.8,1.2,0,g); const c=new THREE.Mesh(new THREE.SphereGeometry(2.1,8,8),mat(Math.random()<.15?0xc0392b:0x2e7d32)); c.position.set(side*17.8,4,0); g.add(c); }
     /* utility pole + billboard sometimes */
     if(Math.random()<.5){ box(.22,7.4,.22,0x5d4037,side*14.2,3.7,2.5,g); }
+    /* street light reaching over the road */
+    if(Math.random()<.55){ box(.16,5.6,.16,0x37474f,side*13.6,2.8,-3.5,g); box(-side*2.6,.14,.14,0x37474f,side*12.4,5.55,-3.5,g); const lamp=new THREE.Mesh(new THREE.SphereGeometry(.24,8,8),winMat); lamp.position.set(side*11.2,5.4,-3.5); g.add(lamp); }
     if(Math.random()<.3){ const bb=box(3.6,2,.18,shopCols[(Math.random()*shopCols.length)|0],side*15.4,5.4,-2,g); bb.rotation.y=side>0?-.35:.35; }
   }
   g.position.z=z; scene.add(g); return g;
@@ -329,6 +341,9 @@ for(let i=0;i<22;i++) scenery.push(makeScenery(-i*14+12));
 function lights(g,zf,zb,w){ box(.34,.16,.06,0xfff6c9,-w/2,zf? .62:.62,zf,g); box(.34,.16,.06,0xfff6c9,w/2,.62,zf,g); box(.32,.14,.06,0xd63031,-w/2,.66,zb,g); box(.32,.14,.06,0xd63031,w/2,.66,zb,g); }
 function makeCar(suv=false){ const g=new THREE.Group(); const c=[0xdfe6e9,0x74b9ff,0xffeaa7,0xfd79a8,0x2d3436,0xe17055][(Math.random()*6)|0];
   box(1.8,suv?.85:.6,3.6,c,0,suv?.75:.62,0,g); const cab=box(1.6,suv?.7:.52,1.8,0x22303a,0,suv?1.5:1.16,-.1,g); box(.08,.3,.5,0x22303a,-.95,suv?1.05:.95,-1,g); box(.08,.3,.5,0x22303a,.95,suv?1.05:.95,-1,g);
+  box(1.84,.22,.3,0x636e72,0,.32,-1.78,g); box(1.84,.22,.3,0x636e72,0,.32,1.78,g);                                                       // bumpers
+  box(.62,.3,.05,0xf5f6fa,0,.55,-1.83,g); box(.62,.3,.05,0xf5f6fa,0,.55,1.83,g);                                                         // number plates
+  if(suv){ box(1.5,.07,1.9,0x2d3436,0,1.95,-.1,g); }                                                                                     // roof rails hint
   wheel(.34,-.85,.34,-1.15,g);wheel(.34,.85,.34,-1.15,g);wheel(.34,-.85,.34,1.15,g);wheel(.34,.85,.34,1.15,g); lights(g,-1.82,1.82,1.3); return g; }
 function makeVIP(){ const g=makeCar(); g.children[0].material=mat(0x111417); const pole=box(.05,1,.05,0xdfe6e9,.8,1.7,-1.4,g); box(.5,.3,.04,0x006a4e,.8,2.1,-1.4,g); box(.16,.3,.04,0xf42a41,.72,2.1,-1.38,g); return g; }
 let policeBlinkMats=[];
@@ -336,7 +351,13 @@ function makePolice(){ const g=makeCar(); g.children[0].material=mat(0xf5f6fa); 
 function makeCNG(col=0x00b894){ const g=new THREE.Group(); box(1.45,.55,2.4,col,0,.58,0,g); box(1.36,.68,1.15,0x1e2b26,0,1.18,.42,g); box(1.5,.1,1.9,0x2d3436,0,1.58,-.05,g); wheel(.3,0,.3,-.9,g); wheel(.3,-.72,.3,.85,g); wheel(.3,.72,.3,.85,g); person(g,0xfdcb6e); g.children[g.children.length-5].position.z=.3; return g; }
 function makeAuto(){ return makeCNG([0x0984e3,0xe17055,0x6c5ce7][(Math.random()*3)|0]); }
 function makeBike(){ const g=new THREE.Group(); box(.3,.3,1.7,0xd63031,0,.55,0,g); wheel(.32,0,.32,-.75,g); wheel(.32,0,.32,.75,g); person(g,[0x74b9ff,0x55efc4,0xffeaa7][(Math.random()*3)|0]); return g; }
-function makeRickshaw(){ const g=new THREE.Group(); box(1.35,.14,1.15,0xd63031,0,.78,.42,g); box(1.35,.55,.12,0xe17055,0,1.1,.95,g); box(1.25,.09,2.1,0xfdcb6e,0,1.5,-.1,g); wheel(.42,0,.42,-.95,g); wheel(.42,-.68,.42,.62,g); wheel(.42,.68,.42,.62,g); person(g,0x00cec9); return g; }
+function spokes(w,x,y,z,p){ for(let a=0;a<3;a++){ const s=box(.05,w*1.8,.05,0xdfe6e9,x,y,z,p); s.rotation.x=a*Math.PI/3; } }
+function makeRickshaw(){ const g=new THREE.Group(); const art=[0xd63031,0x00b894,0x6c5ce7,0xe84393][(Math.random()*4)|0];
+  box(1.35,.14,1.15,art,0,.78,.42,g); box(1.35,.55,.12,0xe17055,0,1.1,.95,g); box(1.25,.09,2.1,0xfdcb6e,0,1.5,-.1,g);
+  box(1.3,.5,.06,art,-0,.78,1.02,g); box(.4,.34,.07,0xffeaa7,-.38,.8,1.04,g); box(.4,.34,.07,0x55efc4,.38,.8,1.04,g);      // colourful rear art panel
+  box(.1,.5,.1,0x636e72,-.55,1.2,-.85,g); box(.1,.5,.1,0x636e72,.55,1.2,-.85,g);                                              // canopy posts
+  wheel(.42,0,.42,-.95,g); wheel(.42,-.68,.42,.62,g); wheel(.42,.68,.42,.62,g); spokes(.36,-.7,.42,.62,g); spokes(.36,.7,.42,.62,g);
+  person(g,0x00cec9); const pas=makePed(); pas.scale.setScalar(.94); pas.position.set(0,-.05,.5); g.add(pas); return g; }
 function makeBus(pink=false){ const g=new THREE.Group(); const c=pink?0xfd79a8:[0x00a381,0xf4b400,0x0984e3][(Math.random()*3)|0];
   box(2.5,2.3,8.4,c,0,1.65,0,g); box(2.54,.78,7.9,0x22303a,0,2.15,0,g); box(2,.6,.1,0xdff3ff,0,1.5,-4.22,g); box(1.7,.5,.08,0xffffff,0,2.6,-4.24,g);
   wheel(.52,-1.15,.52,-2.8,g);wheel(.52,1.15,.52,-2.8,g);wheel(.52,-1.15,.52,2.8,g);wheel(.52,1.15,.52,2.8,g);
@@ -349,7 +370,10 @@ function makePlayer(){ const g=new THREE.Group();
   box(1.75,.55,3,0x0984e3,0,.58,0,g); box(1.65,.8,1.35,0xd63031,0,1.2,.55,g); box(1.66,.62,.1,0xbfefff,0,1.28,-.82,g); box(1.78,.13,2.3,0xe84393,0,1.68,.05,g);
   const art=box(1.5,.8,.08,0xfdcb6e,0,.95,1.53,g); box(.5,.5,.09,0x00b894,-.4,.95,1.54,g); box(.5,.5,.09,0xe17055,.42,.95,1.54,g);
   wheel(.35,0,.35,-1.08,g); wheel(.37,-.88,.37,1.02,g); wheel(.37,.88,.37,1.02,g);
-  person(g,0xffeaa7); const drv=g.children[g.children.length-6]; return g; }
+  box(.07,.07,.5,0x2d3436,-.95,1.32,-.7,g); box(.07,.07,.5,0x2d3436,.95,1.32,-.7,g); box(.3,.2,.05,0x22303a,-1.05,1.34,-.95,g); box(.3,.2,.05,0x22303a,1.05,1.34,-.95,g); // mirror arms + mirrors
+  const hl=new THREE.Mesh(new THREE.CylinderGeometry(.14,.14,.06,10),matE(0x8a6d1f,0xffe9a8)); hl.rotation.x=Math.PI/2; hl.position.set(0,.62,-1.53); g.add(hl); // headlight
+  box(.7,.06,.3,0x2d3436,0,.3,-.6,g);                                                                                                  // handlebar area
+  person(g,0xffeaa7); return g; }
 const player=makePlayer(); player.position.set(-5.5,0,0); scene.add(player);
 const headlight=new THREE.SpotLight(0xfff2b0,0,40,.5,.5); headlight.position.set(0,1,-1); player.add(headlight); headlight.target.position.set(0,0,-15); player.add(headlight.target);
 
@@ -359,10 +383,15 @@ const NAMES={car:'প্রাইভেট কার',suv:'এসইউভি',c
 const MY_LANES=[-11.3,-8.4,-5.5,-2.7], OP_LANES=[2.7,5.5,8.4,11.3];
 const traffic=[];
 const BUILDERS={car:()=>makeCar(false),suv:()=>makeCar(true),cng:()=>makeCNG(),auto:makeAuto,rickshaw:makeRickshaw,bike:makeBike,bus:()=>makeBus(false),pinkbus:()=>makeBus(true),truck:makeTruck,police:makePolice,vip:makeVIP,ped:makePed};
-function spawnTraffic(zMin=-200,zMax=-95,opposite=false){
+function spawnTraffic(zMin=-200,zMax=-95,opposite=false,force){
   let type;
   if(opposite){ type=['car','suv','cng','bus','truck','auto'][(Math.random()*6)|0]; }
-  else { const pool=['car','car','suv','cng','cng','auto','auto','rickshaw','rickshaw','bike','bus','truck','ped','ped']; type=pool[(Math.random()*pool.length)|0];
+  else if(force){ type=force; }
+  else { let pool=['car','car','suv','cng','cng','auto','auto','rickshaw','rickshaw','bike','bus','truck','ped','ped'];
+    if(curProf.rick>1.3) pool.push('rickshaw','rickshaw','rickshaw');
+    if(curProf.truck>1.4) pool.push('truck','bus','truck');
+    if(curProf.truck<0.7) pool=pool.filter(t=>t!=='truck').concat(['truck']);
+    type=pool[(Math.random()*pool.length)|0];
     const r=Math.random(); if(r<.035) type='vip'; else if(r<.07) type='police'; else if(r<.1) type='pinkbus'; }
   const obj=BUILDERS[type](); const u={type,opposite,hit:false,mirrorDone:false,nearDone:false,spin:0,nudge:0,speed:0};
   if(type==='ped'){ const side=Math.random()<.55; obj.position.set(side?(Math.random()<.5?-14.8:14.8):MY_LANES[(Math.random()*4)|0],0,zMin+Math.random()*(zMax-zMin)); u.speed=side?0:2; u.walker=side; if(side) u.walkPhase=Math.random()*6; }
@@ -372,7 +401,8 @@ function spawnTraffic(zMin=-200,zMax=-95,opposite=false){
 }
 const obstacles=[];
 function spawnObstacle(z){
-  const kind=['stall','stall','manhole','pothole','mud','cart'][(Math.random()*6)|0];
+  let kind=['stall','stall','manhole','pothole','mud','cart'][(Math.random()*6)|0];
+  if(curProf.hawk>1.4&&kind!=='stall'&&Math.random()<.45) kind='stall';   // hawker-heavy areas get more stalls
   const g=new THREE.Group(); const u={kind,hit:false};
   if(kind==='stall'){ box(2.3,1.7,1.9,0xe67e22,0,.85,0,g); box(2.7,.13,2.3,0xd35400,0,1.85,0,g); box(.9,.6,.7,0xffeaa7,-.5,2.1,0,g); box(.7,.5,.6,0x74b9ff,.6,2.05,.2,g); g.position.set(Math.random()<.6?-12.6:12.6,0,z); }
   if(kind==='manhole'){ const c=new THREE.Mesh(new THREE.CircleGeometry(1,18),mat(0x0c0d0e)); c.rotation.x=-Math.PI/2; c.position.y=.13; g.add(c); box(.09,1.5,.09,0x795548,1.15,.75,0,g); box(.5,.34,.05,0xe63946,1.42,1.32,0,g); g.position.set(MY_LANES[(Math.random()*4)|0],0,z); }
@@ -392,6 +422,21 @@ const bribePt=makePoint(0xff5da2); bribePt.visible=false;
 
 /* ================= STATE ================= */
 const AREAS=['Farmgate','Karwan Bazar','Shahbag','TSC','Gulistan','Motijheel','Jatrabari','Mirpur 10','Uttara','Hatirjheel'];
+/* Per-area character: not every road has metro! Gulistan/Karwan/Hatirjheel = none, Jatrabari = flyover */
+const PROFILES={
+ 'Farmgate':{metro:1,note:'মেট্রো করিডোর',rick:1,truck:.8,hawk:.7,tint:0x87b5d6},
+ 'Karwan Bazar':{metro:0,note:'বাজারের ভিড় — ট্রাক বেশি, মেট্রো নেই',rick:1.1,truck:1.7,hawk:1.2,tint:0x93b8cc},
+ 'Shahbag':{metro:1,note:'মেট্রো করিডোর',rick:1,truck:.7,hawk:.6,tint:0x8fc3e8},
+ 'TSC':{metro:1,note:'মেট্রো করিডোর — রিকশা বেশি',rick:1.3,truck:.6,hawk:.6,tint:0x9fd0ee},
+ 'Gulistan':{metro:0,note:'এখানে মেট্রো নেই — হকারের রাজত্ব!',rick:1.9,truck:.9,hawk:1.8,tint:0xa8c4d4},
+ 'Motijheel':{metro:1,note:'মেট্রো করিডোর',rick:.8,truck:.9,hawk:.5,tint:0x87b5d6},
+ 'Jatrabari':{metro:0,fly:1,note:'ফ্লাইওভার এলাকা — বাস-ট্রাক বেশি, মেট্রো নেই',rick:1,truck:1.8,hawk:.8,tint:0x9db4c6},
+ 'Mirpur 10':{metro:1,note:'মেট্রো করিডোর',rick:1.2,truck:.8,hawk:.8,tint:0x8fc3e8},
+ 'Uttara':{metro:1,note:'মেট্রো করিডোর — চওড়া রাস্তা',rick:.7,truck:.8,hawk:.4,tint:0xa5d3f2},
+ 'Hatirjheel':{metro:0,note:'লেকের পাশের রাস্তা — মেট্রো নেই',rick:.9,truck:.6,hawk:.4,tint:0x7fb6d9}
+};
+let curProf=PROFILES['Farmgate'];
+function applyArea(name){ const p=PROFILES[name]||PROFILES['Farmgate']; curProf=p; metroGroup.visible=!!p.metro; flyoverGroup.visible=!!p.fly; if(todIdx===0||todIdx===1){ scene.background.set(p.tint); scene.fog.color.set(p.tint); } }
 const TOD=[{sky:0xa8d8f0,fog:0xa8d8f0,sun:1.3,amb:.8,name:'সকাল'},{sky:0x87b5d6,fog:0x87b5d6,sun:1.5,amb:.85,name:'দুপুর'},{sky:0xe8a58c,fog:0xe8a58c,sun:.95,amb:.65,name:'বিকেল'},{sky:0x1d2b4a,fog:0x1d2b4a,sun:.3,amb:.38,name:'রাত'}];
 let mode='menu', paused=false, speed=0, dist=0, loss=0, charge=100, combo=1, comboTimer=0, rage=0, grabCount=0, crowdGap=13, grabTimer=0;
 let policeChase=false, policeTimer=0, bribeUses=0, bribeActive=false, startGrace=0, areaIdx=0, areaShown='', mudSlow=false, shake=0, invuln=0, bombCD=0, runTime=0, chargingNow=false, savedThisRun=false;
@@ -429,13 +474,14 @@ function reset(startArea){
   player.position.set(-5.5,0,0); player.rotation.set(0,0,0); player.position.y=0;
   grabbers.forEach(g=>g.visible=false); crowd.visible=false; chaseCar.visible=false; bribePt.visible=false;
   for(let i=0;i<16;i++) spawnTraffic(); for(let i=0;i<5;i++) spawnTraffic(-220,-150,true);
+  spawnTraffic(-75,-60,false,'rickshaw'); spawnTraffic(-120,-100,false,'rickshaw');   // rickshaws visible early, like Dhaka roads
   for(let i=0;i<6;i++) spawnObstacle(-60-i*45-Math.random()*30);
   chargePts.forEach((p,i)=>p.position.set(-12.4,0,-i*170-70));
   areaIdx=Math.max(0,AREAS.indexOf(startArea)); if(areaIdx<0)areaIdx=0; areaShown='';
-  applyTOD((Math.random()*4)|0);
+  applyTOD((Math.random()*4)|0); applyArea(AREAS[areaIdx]);
   updateHUD();
 }
-function startRun(){ const sel=$('locSel').value; const area=sel==='Random'?AREAS[(Math.random()*AREAS.length)|0]:sel; reset(area); mode='play'; $('menu').style.display='none'; $('hud').style.display='block'; $('ticker').style.display='flex'; $('touch').classList.add('on'); banner('📍 '+area+' — সোজা চলো! ('+TOD[todIdx].name+')'); tone(520,.15); }
+function startRun(){ const sel=$('locSel').value; const area=sel==='Random'?AREAS[(Math.random()*AREAS.length)|0]:sel; reset(area); mode='play'; $('menu').style.display='none'; $('hud').style.display='block'; $('ticker').style.display='flex'; $('touch').classList.add('on'); banner('📍 '+area+' — '+curProf.note+' ('+TOD[todIdx].name+')'); tone(520,.15); }
 function goHome(){ mode='menu'; paused=false; $('pauseModal').classList.remove('open'); $('overScreen').style.display='none'; $('hud').style.display='none'; $('ticker').style.display='none'; $('touch').classList.remove('on'); $('menu').style.display='flex'; reset(AREAS[0]); }
 function gameOver(reason,headline){
   if(mode!=='play')return; mode='over';
@@ -462,6 +508,7 @@ $('mwWeek').onclick=()=>{ $('mwWeek').classList.add('act'); $('mwAll').classList
 $('mwAll').onclick=()=>{ $('mwAll').classList.add('act'); $('mwWeek').classList.remove('act'); renderMW(false); };
 $('howBtn').onclick=()=>{ const h=$('howto'); h.style.display=h.style.display==='block'?'none':'block'; };
 $('playBtn').onclick=startRun; $('againBtn').onclick=()=>{ $('overScreen').style.display='none'; startRun(); };
+$('locSel').addEventListener('change',()=>{ const v=$('locSel').value; applyArea(v==='Random'?'Farmgate':v); });   // menu scenery changes with your pick
 $('menuBtn2').onclick=()=>{ $('overScreen').style.display='none'; goHome(); };
 function setPaused(v){ if(mode!=='play')return; paused=v; $('pauseModal').classList.toggle('open',v); if(!v){ let n=3; const cd=$('countDown'); cd.style.display='block'; cd.textContent=n; const iv=setInterval(()=>{ n--; if(n<=0){ clearInterval(iv); cd.style.display='none'; } else cd.textContent=n; },550); } }
 $('pauseBtn').onclick=()=>setPaused(true);
@@ -487,19 +534,22 @@ bindBtn('tGas','KeyW'); bindBtn('tBrake','KeyS'); bindBtn('tLeft','KeyA'); bindB
 function doHorn(){ sndHorn(); for(const t of traffic){ const u=t.userData; if(u.opposite||u.hit)continue; const dz=t.position.z-player.position.z; if(dz<-4&&dz>-24&&Math.abs(t.position.x-player.position.x)<3&&['rickshaw','auto','bike','cng'].includes(u.type)) u.nudge=(t.position.x<=player.position.x?-2.2:2.2); } }
 function doBomb(){ if(bombCD>0)return; bombCD=5; sndBomb(); shake=Math.max(shake,.18); for(const t of traffic){ const u=t.userData; if(u.opposite||u.hit)continue; const dz=t.position.z-player.position.z; if(dz<-4&&dz>-28&&Math.abs(t.position.x-player.position.x)<4&&['car','suv','cng','auto'].includes(u.type)) u.nudge=(t.position.x<=player.position.x?-3.4:3.4); } }
 /* ================= MAIN LOOP ================= */
-const clock=new THREE.Clock(); let vy=0, airborne=false, blinkT=0, sirenT=0;
+const clock=new THREE.Clock(); let vy=0, airborne=false, blinkT=0, sirenT=0, fpsAcc=0, fpsN=0, fpsBad=0;
 reset(AREAS[0]); mode='menu'; applyTOD(1);
 function scrollWorld(dz,dt){
   for(const d of dashes){ d.position.z+=dz; if(d.position.z>14)d.position.z-=34*13; }
   for(const s of scenery){ s.position.z+=dz; if(s.position.z>18)s.position.z-=22*14; }
   for(const h of hedges){ h.position.z+=dz; if(h.position.z>14)h.position.z-=hedges.length*12; }
   for(const p of pillars){ p.position.z+=dz; if(p.position.z>16)p.position.z-=10*30; }
+  for(const p of flyPillars){ p.position.z+=dz; if(p.position.z>16)p.position.z-=10*30; }
   for(const p of chargePts){ p.position.z+=dz; if(p.position.z>15)p.position.z-=3*170; }
   if(bribeActive){ bribePt.position.z+=dz; }
 }
 function animate(){
   requestAnimationFrame(animate);
   const dt=Math.min(clock.getDelta(),.05); blinkT+=dt;
+  /* auto quality: if the device struggles, turn shadows off so the game stays smooth */
+  fpsAcc+=dt; fpsN++; if(fpsAcc>=1){ const fps=fpsN/fpsAcc; fpsAcc=0; fpsN=0; if(fps<23&&sun.castShadow){ if(++fpsBad>=3) sun.castShadow=false; } else fpsBad=0; }
   for(const m of policeBlinkMats) m.emissive=new THREE.Color(blinkT%0.6<0.3?0x661111:0x111166);
   if(mode==='menu'){ scrollWorld(7*dt,dt);
     for(let i=traffic.length-1;i>=0;i--){ const t=traffic[i],u=t.userData; t.position.z+=(u.opposite?(7+u.speed):(7-u.speed))*dt; if(t.position.z>16||t.position.z<-300){ scene.remove(t); traffic.splice(i,1); spawnTraffic(-210,-170,Math.random()<.3);} }
@@ -599,12 +649,12 @@ function animate(){
   } if(bribePt.position.z>15){ bribePt.position.z=-85; } }
   /* --- area banners --- */
   const ai=Math.floor(dist/450)%AREAS.length; const startOff=areaIdx; const cur=AREAS[(startOff+ai)%AREAS.length];
-  if(cur!==areaShown){ areaShown=cur; areaIdx=(startOff+ai)%AREAS.length; if(runTime>2)banner('📍 '+cur); }
+  if(cur!==areaShown){ areaShown=cur; areaIdx=(startOff+ai)%AREAS.length; applyArea(cur); if(runTime>2)banner('📍 '+cur+' — '+curProf.note); }
   /* --- end: charge empty & stopped --- */
   if(charge<=0&&speed<.4){ gameOver('ব্যাটারির চার্জ শেষ — মিশুকটি রাস্তার মাঝখানে চুপচাপ থেমে রইল।','চার্জ শেষ! মাঝরাস্তায় থামল ব্রেক লেস'); return; }
   /* --- camera --- */
   if(shake>0)shake-=dt;
-  camera.position.set(player.position.x*.6+(shake>0?(Math.random()-.5)*shake*1.6:0),6.1+(shake>0?(Math.random()-.5)*shake:0),11.8);
+  camera.position.set(player.position.x*.6+(shake>0?(Math.random()-.5)*shake*1.6:0),5.5+(shake>0?(Math.random()-.5)*shake:0),11.2);
   camera.lookAt(player.position.x,1.1,-14);
   updateHUD(); renderer.render(scene,camera);
 }
