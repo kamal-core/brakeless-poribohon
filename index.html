@@ -59,6 +59,7 @@
  .trow{display:flex;gap:8px}
  .tbtn{pointer-events:auto;width:58px;height:58px;border-radius:50%;border:2px solid rgba(255,255,255,.6);background:rgba(0,0,0,.45);color:#fff;font-size:21px;font-weight:900}
  .tbtn.big{width:74px;height:74px;background:rgba(46,204,113,.55)}
+#tTilt.on{background:rgba(0,184,148,.75);border-color:#fff;box-shadow:0 0 14px #00b894}
  .tbtn.brk{background:rgba(230,57,70,.5)} .tbtn.bst{background:rgba(244,180,0,.55)}
  @media (pointer:coarse){#touch.on{display:flex}}
  /* ---------- Modals ---------- */
@@ -113,7 +114,7 @@
 
 <!-- ======= Touch ======= -->
 <div id="touch">
-  <div class="tcol"><div class="trow"><button class="tbtn" id="tHorn">📯</button><button class="tbtn" id="tBomb">💥</button></div>
+  <div class="tcol"><div class="trow"><button class="tbtn" id="tHorn">📯</button><button class="tbtn" id="tBomb">💥</button><button class="tbtn" id="tTilt" title="Tilt mode">📱</button></div>
   <div class="trow"><button class="tbtn" id="tLeft">◀</button><button class="tbtn" id="tRight">▶</button></div></div>
   <div class="tcol"><div class="trow"><button class="tbtn brk" id="tBrake">▼</button><button class="tbtn bst" id="tBoost">🚀</button></div>
   <div class="trow"><button class="tbtn big" id="tGas">▲</button></div></div>
@@ -149,6 +150,7 @@
     <p>🚓 <b>পুলিশ ও মামলা</b> — পুলিশের গাড়িতে ধাক্কা দিলে সাইরেন-ধাওয়া শুরু। তখন <b>গোলাপি দাগে</b> আস্তে ঢুকে চা-খরচ দিলে মামলা শেষ — তবে প্রতি বার খরচের হার বাড়বে!</p>
     <p>🕳️ <b>ম্যানহোল</b> — লাল কাপড়ের কাঠি দেখলেই সাবধান, খোলা ম্যানহোলে পড়লে শেষ। বিক্ষোভের ঠেলাগাড়িতে উড়াল দিলে বোনাস!</p>
     <p>⌨️ <b>কন্ট্রোল:</b> W/▲ গতি • S/▼ ব্রেক • A/D মোড় • Space/Shift বুস্ট • H হর্ন (ছোট গাড়ি সরে যায়) • B সাউন্ড বোমা • M সাউন্ড • P/Esc পজ</p>
+      <p>📱 <b>Tilt Mode (মোবাইল):</b> খেলার স্ক্রিনে 📱 বোতামটা চাপলেই tilt চালু — তারপর ফোন ডানে কাত করলে মিশুক ডানে, বামে কাত করলে বামে যাবে, মোড়ের বোতাম চাপার দরকার নেই। আবার 📱 চাপলে বন্ধ। (iPhone-এ একবার permission চাইতে পারে — Allow দিলেই হবে।)</p>
   </div>
   <div class="credit">Made by <b>Kamal Ahmed</b> • <a href="https://www.facebook.com/kamalmostakin" target="_blank" rel="noopener">Facebook</a> • <a href="https://www.youtube.com/@jhoreporapatargolpo" target="_blank" rel="noopener">YouTube</a></div>
   <div class="kbdNote">Enter চাপলেও খেলা শুরু হয়</div>
@@ -442,6 +444,21 @@ let mode='menu', paused=false, speed=0, dist=0, loss=0, charge=100, combo=1, com
 let policeChase=false, policeTimer=0, bribeUses=0, bribeActive=false, startGrace=0, areaIdx=0, areaShown='', mudSlow=false, shake=0, invuln=0, bombCD=0, runTime=0, chargingNow=false, savedThisRun=false;
 let counts={}, todIdx=1;
 const keys={};
+/* ---------- Tilt steering (phone gyroscope) ---------- */
+let tiltOn=false, tiltVal=0, tiltBase=0, lastGamma=null;
+addEventListener('deviceorientation',e=>{ if(e.gamma==null) return; lastGamma=e.gamma;
+  if(!tiltOn) return;
+  if(mode!=='play') tiltBase=e.gamma;                                  /* calibrate while not driving */
+  let d=e.gamma-tiltBase; if(d>180)d-=360; if(d<-180)d+=360;
+  if(Math.abs(d)<3) d=0;                                               /* deadzone */
+  tiltVal=Math.max(-1,Math.min(1,d/20));                               /* full steer at ~20 degrees */
+});
+async function toggleTilt(){
+  if(tiltOn){ tiltOn=false; tiltVal=0; $('tTilt').classList.remove('on'); banner('📱 Tilt mode বন্ধ'); return; }
+  if(typeof DeviceOrientationEvent==='undefined'){ banner('⚠️ এই ডিভাইসে tilt sensor পাওয়া যায়নি'); return; }
+  try{ if(typeof DeviceOrientationEvent.requestPermission==='function'){ const r=await DeviceOrientationEvent.requestPermission(); if(r!=='granted'){ banner('⚠️ Tilt-এর জন্য permission লাগবে'); return; } } }catch(err){ banner('⚠️ Tilt চালু করা গেল না'); return; }
+  if(lastGamma!=null) tiltBase=lastGamma;
+  tiltOn=true; $('tTilt').classList.add('on'); banner('📱 Tilt mode চালু! ফোন কাত করলেই মিশুক ঘুরবে'); }
 function applyTOD(i){ todIdx=i; const t=TOD[i]; scene.background.set(t.sky); scene.fog.color.set(t.fog); sun.intensity=t.sun; amb.intensity=t.amb; headlight.intensity=i===3?2.4:0; winMat.emissiveIntensity=i===3?1.6:.55; }
 function popMsg(t,ms=1200){ const el=$('msgPop'); el.textContent=t; el.style.opacity=1; clearTimeout(popMsg._t); popMsg._t=setTimeout(()=>el.style.opacity=0,ms); }
 function banner(t){ const el=$('areaBanner'); el.textContent=t; el.style.opacity=1; clearTimeout(banner._t); banner._t=setTimeout(()=>el.style.opacity=0,2600); }
@@ -531,6 +548,7 @@ addEventListener('keyup',e=>keys[e.code]=false);
 function bindBtn(id,code,fn){ const el=$(id); const on=e=>{e.preventDefault(); if(fn)fn(); else keys[code]=true;}; const off=e=>{e.preventDefault(); if(!fn)keys[code]=false;};
   el.addEventListener('touchstart',on,{passive:false}); el.addEventListener('touchend',off,{passive:false}); el.addEventListener('mousedown',on); el.addEventListener('mouseup',off); el.addEventListener('touchcancel',off,{passive:false}); }
 bindBtn('tGas','KeyW'); bindBtn('tBrake','KeyS'); bindBtn('tLeft','KeyA'); bindBtn('tRight','KeyD'); bindBtn('tBoost','Space'); bindBtn('tHorn',null,()=>mode==='play'&&doHorn()); bindBtn('tBomb',null,()=>mode==='play'&&doBomb());
+$('tTilt').addEventListener('click',e=>{ e.preventDefault(); toggleTilt(); });
 function doHorn(){ sndHorn(); for(const t of traffic){ const u=t.userData; if(u.opposite||u.hit)continue; const dz=t.position.z-player.position.z; if(dz<-4&&dz>-24&&Math.abs(t.position.x-player.position.x)<3&&['rickshaw','auto','bike','cng'].includes(u.type)) u.nudge=(t.position.x<=player.position.x?-2.2:2.2); } }
 function doBomb(){ if(bombCD>0)return; bombCD=5; sndBomb(); shake=Math.max(shake,.18); for(const t of traffic){ const u=t.userData; if(u.opposite||u.hit)continue; const dz=t.position.z-player.position.z; if(dz<-4&&dz>-28&&Math.abs(t.position.x-player.position.x)<4&&['car','suv','cng','auto'].includes(u.type)) u.nudge=(t.position.x<=player.position.x?-3.4:3.4); } }
 /* ================= MAIN LOOP ================= */
@@ -564,7 +582,7 @@ function animate(){
   if(keys['KeyS']||keys['ArrowDown']) accel-=17;
   speed+=accel*dt; speed-=speed*.22*dt; if(accel<=0) speed-=1.1*dt;
   let cap=boost?40:31; if(charge<15)cap*=.48; if(mudSlow)cap*=.45; speed=clamp(speed,0,cap);
-  const steer=((keys['KeyA']||keys['ArrowLeft'])?-1:0)+((keys['KeyD']||keys['ArrowRight'])?1:0);
+  const steer=clamp(((keys['KeyA']||keys['ArrowLeft'])?-1:0)+((keys['KeyD']||keys['ArrowRight'])?1:0)+(tiltOn?tiltVal:0),-1,1);
   player.position.x=clamp(player.position.x+steer*(6.5+speed*.38)*dt,-12.7,12.7);
   player.rotation.z=-steer*.06; player.rotation.y=-steer*.13;
   /* median hedge bump */
@@ -631,7 +649,7 @@ function animate(){
     else grabTimer=Math.max(0,grabTimer-dt);
     if(grabCount>0&&speed<2){ gameOver('ধরা পড়া অবস্থায় মিশুক থেমে যেতেই জনতা ঘিরে ধরল।','থামলেই বিপদ — জনতার ঘেরাওয়ে শেষ!'); return; }
     /* shake off grabbers with boost + sharp steer */
-    if(grabCount>0&&(keys['Space'])&&Math.abs((keys['KeyA']?-1:0)+(keys['KeyD']?1:0))>0&&Math.random()<dt*.9){ grabCount--; grabbers[grabCount].visible=false; crowdGap=Math.min(13,crowdGap+3); popMsg('💨 একজনকে ঝেড়ে ফেললে!'); }
+    if(grabCount>0&&(keys['Space']||keys['ShiftLeft'])&&Math.abs(steer)>0.4&&Math.random()<dt*.9){ grabCount--; grabbers[grabCount].visible=false; crowdGap=Math.min(13,crowdGap+3); popMsg('💨 একজনকে ঝেড়ে ফেললে!'); }
   } else { crowd.visible=false; crowdGap=13; }
   if(rage>0)rage=Math.max(0,rage-dt*1.15);
   /* --- police chase --- */
